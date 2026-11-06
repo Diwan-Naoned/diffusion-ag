@@ -18,11 +18,16 @@ include:
 
 services:
   ag-auth-stub:
-    image: python:3.13-alpine
+    # Files are baked into an image rather than bind-mounted: Dokploy re-clones
+    # the repo on each deploy, which leaves bind mounts of unchanged containers
+    # pointing at a deleted directory.
+    build:
+      context: ./test
+      dockerfile_inline: |
+        FROM python:3.13-alpine
+        COPY app-stub.py reader.js /stub/
+        CMD ["python", "-u", "/stub/app-stub.py"]
     restart: unless-stopped
-    command: ["python", "-u", "/stub/app-stub.py"]
-    volumes:
-      - ./test:/stub:ro
     networks:
       - dokploy-network
     labels:
