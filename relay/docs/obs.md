@@ -133,7 +133,8 @@ fallback ladder for when to use them.
 
 `AG secours local` talks to the local relay started by `relay/fallback-local.sh`
 (verified on 2026-11-06 with a simulated OBS stream: both YouTube stand-ins got
-video + their audio track).
+video + their audio track; verified on 2026-11-07 from the operator's Mac with OBS
+and the real YouTube events: both events received the stream).
 
 ## Moving the profiles to the venue laptop
 

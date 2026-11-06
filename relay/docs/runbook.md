@@ -183,6 +183,7 @@ opens), or `/salle` and the web app are unreachable from a phone on mobile data.
 
 The laptop runs the same relay in Docker and pushes to both YouTube events
 itself (two uploads: about 6 Mb/s at 720p, which fits the 5G backup).
+Verified on 2026-11-07 with OBS and the real YouTube events.
 
 1. Stop Streaming in OBS.
 2. In a terminal: `relay/fallback-local.sh start`. It prints the phone URL
