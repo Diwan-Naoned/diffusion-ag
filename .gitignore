@@ -1,0 +1,3 @@
+.bun
+# Local env files with real secrets (use relay/.env.example as template)
+relay/.env
