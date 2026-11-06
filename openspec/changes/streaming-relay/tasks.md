@@ -5,7 +5,7 @@
 - [x] 1.1 Configure OBS with the D10 profiles ("AG 1080p": 1080p30, ~4.5 Mb/s CBR; "AG 720p": 720p30, ~2.5 Mb/s; both with 2 s keyframes and the three AAC tracks at 128 kb/s) to publish 1 video + 3 distinct audio tracks over SRT to a local MediaMTX (Stream output first, then the D7 fallback if needed) and verify with `ffprobe` on the MediaMTX path that all 4 tracks are present; record the working OBS settings in `relay/docs/obs.md`
 - [x] 1.2 From that MediaMTX, run the three ffmpeg mappings of D2 (YouTube outputs replaced by local `.flv` files) and verify each output contains the expected audio track by listening to it
 - [x] 1.3 Play the Opus `media/trad` path in MediaMTX's WebRTC reader on an iPhone and an Android phone, lock the screen / switch apps, and record in `relay/docs/mobile-playback.md` whether audio continues
-- [ ] 1.4 Create a throwaway Dokploy Compose app on the VPS with a published UDP port and a Traefik ForwardAuth label pointing at a stub HTTP service; verify a request is blocked when the stub returns 401 and passes when it returns 200
+- [x] 1.4 Create a throwaway Dokploy Compose app on the VPS with a published UDP port and a Traefik ForwardAuth label pointing at a stub HTTP service; verify a request is blocked when the stub returns 401 and passes when it returns 200
 
 ## 2. Relay configuration
 
@@ -23,7 +23,7 @@
 
 ## 4. VPS deployment
 
-- [ ] 4.1 Open UDP 8890 and 8189 in the Hetzner firewall and deploy the stack in Dokploy with real secrets; verify OBS on a home connection can publish and `ffprobe` through a temporary SSH tunnel shows 4 tracks
+- [x] 4.1 Open UDP 8890 and 8189 in the Hetzner firewall and deploy the stack in Dokploy with real secrets; verify OBS on a home connection can publish and `ffprobe` inside the relay container (Dokploy terminal; RTSP is bound to the container's loopback, so no SSH tunnel) shows 4 tracks
 - [ ] 4.2 On the association's channel, create two separate stream keys and two live events bound to them (D9: unlisted, embedding allowed, chat disabled, low-latency mode), and set the keys in Dokploy; verify both events are live at the same time with the right audio in YouTube Studio's preview, and that the player's quality menu offers lower renditions (720p, 480p, 360p) of the 1080p source, or apply the D9 second-channel fallback and record which one was used in `relay/docs/runbook.md`
 - [ ] 4.3 Measure interpretation latency (clap in the interpreter mic, record phone audio and mic together) on Wi-Fi and on 4G/5G; verify it stays under 1 s, and adjust SRT latency if needed; also have a listener judge the intelligibility of the 48 kb/s mono Opus feed with headphones and with the phone speaker, check that the `media/trad` path is mono Opus (Opus TOC byte, see D3: `ffprobe` always reports 2 channels over RTP), and raise the bitrate in D2/D3 if speech is not clear
 

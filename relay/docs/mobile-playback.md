@@ -27,8 +27,17 @@ OBS 33.0.1 publishing and a looping test voice on track 3.
 Audio never stopped by itself in any browser. Phone models and OS/browser
 versions were not recorded.
 
-Relay-side sessions during the test lasted 98 s, 38 s and 11 s (closed by the
-tester), so each lock / app-switch period was short.
+Relay-side sessions during the first round lasted 98 s, 38 s and 11 s (closed by
+the tester), so each lock / app-switch period was short.
+
+### Long locked test and interruption (iPhone, Safari)
+
+- **15 minutes with the screen locked**: audio never stopped.
+- **Interrupted by another audio session** (the phone's alarm ringing): playback
+  **stopped and did not resume by itself**; the listener had to tap Play again.
+  iOS pauses the page's audio when another app takes the audio session, and
+  the WebRTC session itself may stay up, so a reconnection on
+  `connectionstatechange` alone does not catch this case.
 
 ## Conclusions
 
@@ -37,8 +46,11 @@ tester), so each lock / app-switch period was short.
 - The app's `/salle` page should still keep its planned mitigations (guidance
   text, wake lock, reconnection with backoff), which cost little and cover
   older or more aggressive power-saving devices.
+- The `/salle` page must handle audio interruptions (alarm, phone call, other
+  media app): watch the `<audio>` element's `pause` event and the
+  `visibilitychange` event, and show a clear "Reprendre l'écoute" button (a user
+  tap is needed to restart audio on iOS). Reconnection alone is not enough.
 - Arc on iOS keeps its own cookie store: a listener switching browsers must go
   through the access-code step again (it got 401 until it had the cookie).
 - Still worth checking under real conditions (tasks 4.3 / 6.2): a long locked
-  period (≥ 10 min, the AG lasts hours) on mobile data, over the real HTTPS
-  endpoint.
+  period on mobile data, over the real HTTPS endpoint.
