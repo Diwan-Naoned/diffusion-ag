@@ -11,14 +11,14 @@ SRT. The D7 fallback (Custom FFmpeg recording output) is not needed.
 
 Two profiles, identical except for the video output resolution and bitrate (D10):
 
-| Setting | `AG 1080p` (main) | `AG 720p` (weak uplink) |
-|---|---|---|
-| Settings → Video → Base (Canvas) | 1920x1080 | 1920x1080 |
-| Settings → Video → Output (Scaled) | 1920x1080 | 1280x720, Lanczos |
-| Settings → Video → FPS | 30 | 30 |
-| Output → Streaming → Bitrate | 4500 Kbps | 2500 Kbps |
-| Measured video bitrate | ~4480 kb/s | ~2520 kb/s |
-| Total upload (video + 3 × 128k audio) | ~4.9 Mb/s | ~2.9 Mb/s |
+| Setting                               | `AG 1080p` (main) | `AG 720p` (weak uplink) |
+| ------------------------------------- | ----------------- | ----------------------- |
+| Settings → Video → Base (Canvas)      | 1920x1080         | 1920x1080               |
+| Settings → Video → Output (Scaled)    | 1920x1080         | 1280x720, Lanczos       |
+| Settings → Video → FPS                | 30                | 30                      |
+| Output → Streaming → Bitrate          | 4500 Kbps         | 2500 Kbps               |
+| Measured video bitrate                | ~4480 kb/s        | ~2520 kb/s              |
+| Total upload (video + 3 × 128k audio) | ~4.9 Mb/s         | ~2.9 Mb/s               |
 
 Create `AG 1080p` first, then **Profile → Duplicate** to make `AG 720p` and change
 the two lines above. Switching profile requires stopping and restarting the
@@ -27,6 +27,7 @@ stream; the relay recovers on its own (verified).
 ## Settings common to both profiles
 
 **Settings → Stream**
+
 - Service: `Custom…`
 - Server: `srt://<host>:8890?streamid=publish:ag:<user>:<password>&latency=200000&pkt_size=1316`
   - `<host>`: VPS public IP or DNS name (`127.0.0.1` for the local test stack)
@@ -35,6 +36,7 @@ stream; the relay recovers on its own (verified).
 - Stream Key: empty
 
 **Settings → Output** (Output Mode: **Advanced**)
+
 - Streaming tab:
   - Audio Track: tick **1, 2 and 3** (checkboxes appear because the server is `srt://`)
   - Video Encoder: **Apple VT H264 Hardware Encoder**
@@ -50,35 +52,35 @@ stream; the relay recovers on its own (verified).
 
 ## Audio routing (Edit → Advanced Audio Properties → Tracks)
 
-OBS filters apply to a *source*, not to a track, so the room sound is added
+OBS filters apply to a _source_, not to a track, so the room sound is added
 **twice**: once clean for track 1, once ducked for track 2.
 
-| Source | 1 | 2 | 3 | 4–6 |
-|---|---|---|---|---|
-| `Salle` (venue mixer / room mic) | ✅ | | | |
-| `Salle (trad)` (same device, added a second time) | | ✅ | | |
-| `Interprète` (interpreter mic) | | ✅ | ✅ | |
-| Everything else (desktop audio, other mics) | | | | |
+| Source                                            | 1   | 2   | 3   | 4–6 |
+| ------------------------------------------------- | --- | --- | --- | --- |
+| `Salle` (venue mixer / room mic)                  | ✅  |     |     |     |
+| `Salle (trad)` (same device, added a second time) |     | ✅  |     |     |
+| `Interprète` (interpreter mic)                    |     | ✅  | ✅  |     |
+| Everything else (desktop audio, other mics)       |     |     |     |     |
 
 - Track 1 → YouTube A ("son de la salle")
 - Track 2 → YouTube B ("avec traduction"): room ducked under the interpreter
 - Track 3 → interpretation feed in the room (re-encoded to mono Opus 48 kb/s by the relay)
 
 Never put both room sources on the same track (they would sum and sound
-phasey). Set Audio Monitoring to *off* on `Salle (trad)`.
+phasey). Set Audio Monitoring to _off_ on `Salle (trad)`.
 
 ### Ducking: Compressor on `Salle (trad)`
 
 Right-click `Salle (trad)` → Filters → + → **Compressor**:
 
-| Field | Value |
-|---|---|
+| Field                    | Value        |
+| ------------------------ | ------------ |
 | Sidechain/Ducking Source | `Interprète` |
-| Ratio | 10:1 |
-| Threshold | −40 dB |
-| Attack | 5 ms |
-| Release | 600 ms |
-| Output Gain | 0 dB |
+| Ratio                    | 10:1         |
+| Threshold                | −40 dB       |
+| Attack                   | 5 ms         |
+| Release                  | 600 ms       |
+| Output Gain              | 0 dB         |
 
 Target: the room drops by about 15–20 dB while the interpreter speaks. Raise the
 threshold (e.g. −35 dB) for less ducking, lower it for more. Verified working on
@@ -121,13 +123,13 @@ Both start as **Profile → Duplicate** of `AG 720p` (they must fit the 5G backu
 level 1 uploads twice, level 2 has no relay in between). See the runbook's
 fallback ladder for when to use them.
 
-| Setting | `AG secours local` (level 1) | `AG secours YouTube` (level 2) |
-|---|---|---|
-| Stream → Service | Custom… | Custom… |
-| Stream → Server | `srt://127.0.0.1:8890?streamid=publish:ag:publisher:<RELAY_PUBLISH_PASS of relay/.env.local>&latency=200000&pkt_size=1316` | `rtmps://a.rtmps.youtube.com/live2` |
-| Stream → Stream Key | empty | key B ("Avec traduction") |
-| Output → Streaming → Audio Track | 1, 2, 3 (checkboxes) | **2** only (radio buttons with an RTMP server) |
-| Video | as `AG 720p` | as `AG 720p` |
+| Setting                          | `AG secours local` (level 1)                                                                                               | `AG secours YouTube` (level 2)                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Stream → Service                 | Custom…                                                                                                                    | Custom…                                        |
+| Stream → Server                  | `srt://127.0.0.1:8890?streamid=publish:ag:publisher:<RELAY_PUBLISH_PASS of relay/.env.local>&latency=200000&pkt_size=1316` | `rtmps://a.rtmps.youtube.com/live2`            |
+| Stream → Stream Key              | empty                                                                                                                      | key B ("Avec traduction")                      |
+| Output → Streaming → Audio Track | 1, 2, 3 (checkboxes)                                                                                                       | **2** only (radio buttons with an RTMP server) |
+| Video                            | as `AG 720p`                                                                                                               | as `AG 720p`                                   |
 
 `AG secours local` talks to the local relay started by `relay/fallback-local.sh`
 (verified on 2026-11-06 with a simulated OBS stream: both YouTube stand-ins got
