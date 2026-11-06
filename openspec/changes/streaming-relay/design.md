@@ -126,6 +126,14 @@ The content is mostly a slide deck and a webcam with little motion. YouTube Live
   - switching profiles means stopping and restarting the stream (a few seconds), which the relay handles (automatic recovery).
 - *Alternative*: 720p only. Simpler, but slide text is less sharp, and YouTube's renditions already cover viewers with weak connections.
 
+### D11. Fallback ladder when the VPS is down
+- **Level 1, local relay**: the venue laptop can run the same relay image and MediaMTX configuration locally (`relay/docker-compose.local.yml`, driven by `relay/fallback-local.sh`, secrets in a gitignored `relay/.env.local`). OBS switches to an `AG secours local` profile publishing to `srt://127.0.0.1:8890`, and the laptop pushes to the same two YouTube keys.
+  - This uploads twice from the venue (one stream per event), so the profile is based on `AG 720p` (about 6 Mb/s in total, within the 5G backup). It is a degraded mode, outside the normal single-upload requirement.
+  - The interpretation feed is offered best effort on the venue LAN through MediaMTX's own player page (`http://<laptop IP>:8889/media/trad/`), which only works if the venue Wi-Fi does not isolate clients (checked at the rehearsal).
+  - The image is built in advance (`fallback-local.sh prepare`), so starting it needs no internet beyond the YouTube uploads.
+- **Level 2, direct to YouTube**: an `AG secours YouTube` OBS profile streams track 2 (room + interpreter) straight to event B, so both audiences can still follow. No interpretation feed.
+- *Why*: the VPS is a single point of failure for both YouTube streams; level 1 keeps both events and needs only Docker on the laptop, level 2 needs nothing but OBS.
+
 ## Risks / Trade-offs
 
 - [OBS cannot send 3 audio tracks over SRT] → D7 fallback (FFmpeg custom recording output); spike first.
@@ -138,4 +146,4 @@ The content is mostly a slide deck and a webcam with little motion. YouTube Live
 
 ## Migration Plan
 
-New deployment, nothing to migrate. Rollout: deploy the stack → loopback test from a laptop with OBS → full rehearsal with the venue laptop at least one week before the AG → rotate credentials. Rollback: stop the Dokploy service; OBS can stream directly to a single YouTube key as a degraded mode (no translation stream).
+New deployment, nothing to migrate. Rollout: deploy the stack → loopback test from a laptop with OBS → full rehearsal with the venue laptop at least one week before the AG → rotate credentials. Rollback / fallback: see D11 (local relay on the venue laptop, then OBS straight to YouTube event B); the procedures are in `relay/docs/runbook.md`.

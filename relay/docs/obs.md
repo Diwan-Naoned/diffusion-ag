@@ -115,6 +115,24 @@ docker exec relay-relay-1 ffprobe -v error -rtsp_transport tcp \
   rtsp://127.0.0.1:8554/ag
 ```
 
+## Fallback profiles
+
+Both start as **Profile → Duplicate** of `AG 720p` (they must fit the 5G backup:
+level 1 uploads twice, level 2 has no relay in between). See the runbook's
+fallback ladder for when to use them.
+
+| Setting | `AG secours local` (level 1) | `AG secours YouTube` (level 2) |
+|---|---|---|
+| Stream → Service | Custom… | Custom… |
+| Stream → Server | `srt://127.0.0.1:8890?streamid=publish:ag:publisher:<RELAY_PUBLISH_PASS of relay/.env.local>&latency=200000&pkt_size=1316` | `rtmps://a.rtmps.youtube.com/live2` |
+| Stream → Stream Key | empty | key B ("Avec traduction") |
+| Output → Streaming → Audio Track | 1, 2, 3 (checkboxes) | **2** only (radio buttons with an RTMP server) |
+| Video | as `AG 720p` | as `AG 720p` |
+
+`AG secours local` talks to the local relay started by `relay/fallback-local.sh`
+(verified on 2026-11-06 with a simulated OBS stream: both YouTube stand-ins got
+video + their audio track).
+
 ## Moving the profiles to the venue laptop
 
 **Profile → Export** in OBS, then **Profile → Import** on the venue laptop.

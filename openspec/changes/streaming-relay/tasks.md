@@ -30,8 +30,9 @@
 ## 5. Operator documentation
 
 - [ ] 5.1 Write `relay/docs/runbook.md` (OBS profile and audio routing with ducking on track 2, SRT URL format, pre-GA checklist, 5G failover procedure including when to switch to the 720p OBS profile, degraded mode streaming directly to YouTube, credential rotation after the AG) and verify a second person can follow it to start a test stream
+- [x] 5.2 Write the local fallback relay (D11: `relay/docker-compose.local.yml`, `relay/fallback-local.sh`, `relay/.env.local.example`) and the `AG secours local` / `AG secours YouTube` OBS profiles in `relay/docs/obs.md`; verify with a simulated OBS stream that `prepare`/`start`/`status`/`stop` work and both YouTube stand-ins receive video + their audio track
 
 ## 6. Integration with the web app
 
 - [ ] 6.1 Once `remote-participation-app` provides `/auth/media`, point ForwardAuth at it and verify the WHEP feed plays with a participant cookie and returns 401 without one
-- [ ] 6.2 Full rehearsal at the venue (or on its network conditions) at least one week before the AG, with the venue laptop on Wi-Fi then forced onto 5G; verify both YouTube streams and the in-room feed survive the switch, that the 1080p profile holds on 5G (upload about 5 Mb/s, no sustained SRT losses), otherwise switch to the 720p profile and record that in the runbook, and that slide text is readable on a phone
+- [ ] 6.2 Full rehearsal at the venue (or on its network conditions) at least one week before the AG, with the venue laptop on Wi-Fi then forced onto 5G; verify both YouTube streams and the in-room feed survive the switch, that the 1080p profile holds on 5G (upload about 5 Mb/s, no sustained SRT losses), otherwise switch to the 720p profile and record that in the runbook, that slide text is readable on a phone, and run fallback levels 1 and 2 from the runbook (including whether the LAN interpretation feed plays on the venue Wi-Fi)

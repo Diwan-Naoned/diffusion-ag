@@ -20,7 +20,8 @@ Detailed OBS settings: [`obs.md`](obs.md). Mobile behaviour: [`mobile-playback.m
 | Relay secrets | Dokploy → `ag-relay` → Environment |
 | YouTube events and keys | association's YouTube channel → YouTube Studio → Live |
 | Interpretation feed | `https://<app host>/salle` (web app), WHEP at `/media/trad/whep` |
-| OBS profiles | venue laptop: `AG 1080p` (main), `AG 720p` (weak uplink), `AG secours YouTube` (degraded mode) |
+| OBS profiles | venue laptop: `AG 1080p` (main), `AG 720p` (weak uplink), `AG secours local` and `AG secours YouTube` (fallbacks, section 6) |
+| Local fallback relay | venue laptop: `relay/fallback-local.sh`, secrets in `relay/.env.local` |
 
 ## 2. YouTube setup (once per AG)
 
@@ -105,6 +106,18 @@ Maximum Retries 100 (OBS must keep retrying during a network switch).
 
 The laptop must not sleep: disable sleep / screen saver, keep it on mains power.
 
+**Fallback profiles** (settings in [`obs.md`](obs.md#fallback-profiles)):
+- `AG secours local`: copy of `AG 720p`, server
+  `srt://127.0.0.1:8890?streamid=publish:ag:publisher:<RELAY_PUBLISH_PASS of relay/.env.local>&latency=200000&pkt_size=1316`
+- `AG secours YouTube`: copy of `AG 720p`, server `rtmps://a.rtmps.youtube.com/live2`,
+  Stream Key = key B, Audio Track **2** only
+
+**Local fallback relay** (once per AG, with internet):
+1. Docker Desktop installed on the laptop; a copy of this repository on it.
+2. `cp relay/.env.local.example relay/.env.local`, then fill in a publish
+   password and the **same two YouTube URLs as in Dokploy**.
+3. `relay/fallback-local.sh prepare` (builds the image; `start` then works offline).
+
 ## 5. Pre-AG checklist
 
 **One week before (rehearsal, task 6.2)**
@@ -112,12 +125,15 @@ The laptop must not sleep: disable sleep / screen saver, keep it on mains power.
 - [ ] Tune the ducking threshold and the interpreter's noise gate with the real microphones
 - [ ] Decide whether `AG 1080p` holds on 5G (otherwise plan to use `AG 720p` on 5G)
 - [ ] Slide text readable on a phone in the YouTube player
+- [ ] Fallback level 1: `fallback-local.sh start` + `AG secours local` feeds both YouTube events; does `http://<laptop IP>:8889/media/trad/` play on a phone on the venue Wi-Fi?
+- [ ] Fallback level 2: `AG secours YouTube` reaches event B with track 2
 
 **Day before**
 - [ ] New `RELAY_PUBLISH_PASS` set in Dokploy and in the OBS profiles
 - [ ] YouTube events created (section 2), keys in Dokploy, redeployed with the **production** compose path
 - [ ] Web app points to the right YouTube video IDs; `/auth/media` and `/salle` work
-- [ ] OBS profiles imported on the venue laptop, same OBS version
+- [ ] OBS profiles imported on the venue laptop, same OBS version, fallback profiles updated with the new keys/passwords
+- [ ] `relay/.env.local` holds the new YouTube keys; `relay/fallback-local.sh prepare` done; Docker Desktop starts
 
 **One hour before**
 - [ ] Laptop on mains power, sleep disabled, 5G backup charged and ready
@@ -144,19 +160,47 @@ about 30 seconds:
 1. **Stop Streaming**, Profile → `AG 720p`, **Start Streaming** (about 5 s of interruption).
 2. Switch back to `AG 1080p` only during a pause, once back on Wi-Fi.
 
-### Degraded mode: relay or VPS down
+### VPS down: fallback ladder
 
-If the VPS is unreachable (OBS cannot connect for more than a minute while the
-internet works), stream directly to YouTube **event B** (room + interpreter,
-so both audiences can follow), without the relay:
+| Level | When | OBS profile | YouTube | Phone feed |
+|---|---|---|---|---|
+| 0 | normal | `AG 1080p` / `AG 720p` | A + B via the VPS | `/salle` (web app) |
+| 1 | VPS unreachable | `AG secours local` | A + B via the laptop | best effort on the venue LAN |
+| 2 | level 1 fails | `AG secours YouTube` | B only, direct | none |
 
-1. Profile → `AG secours YouTube` (prepared in advance: Custom server
-   `rtmps://a.rtmps.youtube.com/live2`, Stream Key = key B, Output → Streaming →
-   Audio Track **2**, video settings as `AG 720p`).
-2. Start Streaming.
-3. Announce in the room that the phone interpretation feed is unavailable (the
+**Recognising "VPS down":** OBS keeps reconnecting (or shows a connection
+error) for more than a minute while the laptop does have internet (a website
+opens), or `/salle` and the web app are unreachable from a phone on mobile data.
+
+#### Level 1: local relay on the laptop
+
+The laptop runs the same relay in Docker and pushes to both YouTube events
+itself (two uploads: about 6 Mb/s at 720p, which fits the 5G backup).
+
+1. Stop Streaming in OBS.
+2. In a terminal: `relay/fallback-local.sh start`. It prints the phone URL
+   (`http://<laptop LAN IP>:8889/media/trad/`).
+3. OBS: Profile → `AG secours local`, Start Streaming.
+4. `relay/fallback-local.sh status`: expect the 4 ingest tracks and 3 ffmpeg outputs.
+   YouTube Studio: both events receive data again.
+5. Phones: if the venue Wi-Fi lets devices reach each other (checked at the
+   rehearsal), announce the printed URL (or show it as a QR code); otherwise
+   announce that the phone interpretation feed is unavailable.
+6. When the VPS is back: Stop Streaming, Profile → `AG 1080p` (or `AG 720p`),
+   Start Streaming, then `relay/fallback-local.sh stop`.
+
+The YouTube events accept the laptop's connection on the same keys as soon as
+the VPS stopped pushing (it stops by itself once OBS no longer reaches it).
+
+#### Level 2: OBS straight to YouTube event B
+
+If the local relay does not work (Docker not starting, laptop overloaded), stream
+directly to **event B** (room + interpreter, so both audiences can follow):
+
+1. Profile → `AG secours YouTube`, Start Streaming.
+2. Announce in the room that the phone interpretation feed is unavailable (the
    tour-guide radio kit is the offline fallback, if provided).
-4. Remote viewers of event A: post the event B link where the event A link was shared.
+3. Remote viewers of event A: post the event B link where the event A link was shared.
 
 ### Troubleshooting
 
@@ -184,5 +228,7 @@ reload Traefik in Dokploy's Web Server settings.
 - [ ] Rotate credentials:
   - new `RELAY_PUBLISH_PASS` in Dokploy (`openssl rand -hex 24`), redeploy
   - delete or reset both YouTube stream keys in YouTube Studio
-  - delete any exported copies of the OBS profiles (they contain the SRT password)
+  - delete any exported copies of the OBS profiles (they contain the SRT password
+    and, for `AG secours YouTube`, key B)
+  - on the laptop: `relay/fallback-local.sh stop`, and clear the YouTube URLs in `relay/.env.local`
 - [ ] Optionally stop the `ag-relay` service in Dokploy until the next AG

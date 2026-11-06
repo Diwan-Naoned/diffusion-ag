@@ -1,0 +1,31 @@
+# Local fallback relay on the venue laptop (fallback level 1, see docs/runbook.md).
+#
+# Same image and MediaMTX configuration as the VPS relay, without Traefik: OBS
+# publishes to srt://127.0.0.1:8890 and the relay pushes to YouTube A and B
+# from the laptop (two uploads from the venue instead of one).
+#
+# Do not run this directly: use relay/fallback-local.sh (prepare | start | stop | status),
+# which reads relay/.env.local and sets RELAY_PUBLIC_IP to the laptop's LAN address.
+
+name: ag-relay-local
+
+services:
+  relay:
+    build: .
+    image: ag-relay:local
+    restart: "no"
+    environment:
+      MTX_AUTHINTERNALUSERS_0_USER: ${RELAY_PUBLISH_USER:-publisher}
+      MTX_AUTHINTERNALUSERS_0_PASS: ${RELAY_PUBLISH_PASS:?set RELAY_PUBLISH_PASS in relay/.env.local}
+      MTX_WEBRTCADDITIONALHOSTS: ${RELAY_PUBLIC_IP:?run through relay/fallback-local.sh}
+      YOUTUBE_URL_A: ${YOUTUBE_URL_A:?set YOUTUBE_URL_A in relay/.env.local}
+      YOUTUBE_URL_B: ${YOUTUBE_URL_B:?set YOUTUBE_URL_B in relay/.env.local}
+      TRAD_BITRATE: ${TRAD_BITRATE:-48k}
+    ports:
+      # SRT ingest from OBS (local)
+      - "8890:8890/udp"
+      # Best effort: interpretation feed for phones on the venue LAN, through
+      # MediaMTX's own player page http://<laptop LAN IP>:8889/media/trad/
+      # (works only if the venue Wi-Fi does not isolate clients).
+      - "8889:8889"
+      - "8189:8189/udp"
