@@ -1,0 +1,58 @@
+# Local end-to-end test stack (tasks 3.x). Overlay on the production compose:
+#
+#   docker network create dokploy-network   # once
+#   test/stack.sh up -d --build      (wrapper for docker compose with the files below)
+#
+# Adds Traefik (in place of Dokploy's), a stub of the web app (auth + player
+# page) and two RTMP sinks standing in for the YouTube ingests.
+# Only test deviation from production labels: the WHEP router is served on
+# plain HTTP (entrypoint "web", TLS off), so no trusted certificate is needed.
+# Open the player at http://<APP_HOST>:8088 (APP_HOST in test/test.env; set it to
+# the Mac's LAN IP so phones on the same Wi-Fi can reach it).
+
+services:
+  relay:
+    labels:
+      traefik.http.routers.ag-relay-whep.entrypoints: web
+      traefik.http.routers.ag-relay-whep.tls: "false"
+
+  traefik:
+    image: traefik:v3.7.17
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=dokploy-network
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --log.level=INFO
+      - --accesslog=true
+    ports:
+      - "8088:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dokploy-network
+
+  app:
+    image: python:3.13-alpine
+    command: ["python", "-u", "/stub/app-stub.py"]
+    volumes:
+      - ./test:/stub:ro
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.app.rule=PathPrefix(`/`)
+      - traefik.http.routers.app.entrypoints=web
+      - traefik.http.routers.app.priority=1
+      - traefik.http.services.app.loadbalancer.server.port=8000
+
+  # Stand-ins for YouTube A and B: plain MediaMTX accepting RTMP on /live.
+  sink-a:
+    image: bluenviron/mediamtx:1.21.3
+    networks:
+      - dokploy-network
+  sink-b:
+    image: bluenviron/mediamtx:1.21.3
+    networks:
+      - dokploy-network
