@@ -1,0 +1,53 @@
+# AG streaming relay, deployed as a Dokploy Compose app (D6).
+#
+# Public surface:
+#   8890/udp  SRT ingest (publish credentials required)       - published on the host
+#   8189/udp  WebRTC ICE media for the interpretation feed     - published on the host
+#   https://${APP_HOST}/media/trad/whep*  WHEP signaling, via Traefik + ForwardAuth
+# WebRTC HTTP 8889 is only reachable on dokploy-network (Traefik).
+#
+# Required env (set in Dokploy, see .env.example):
+#   RELAY_PUBLISH_PASS, RELAY_PUBLIC_IP, YOUTUBE_URL_A, YOUTUBE_URL_B,
+#   APP_HOST, RELAY_AUTH_URL
+
+services:
+  relay:
+    build: .
+    restart: unless-stopped
+    environment:
+      MTX_AUTHINTERNALUSERS_0_USER: ${RELAY_PUBLISH_USER:-publisher}
+      MTX_AUTHINTERNALUSERS_0_PASS: ${RELAY_PUBLISH_PASS:?set RELAY_PUBLISH_PASS}
+      MTX_WEBRTCADDITIONALHOSTS: ${RELAY_PUBLIC_IP:?set RELAY_PUBLIC_IP}
+      YOUTUBE_URL_A: ${YOUTUBE_URL_A:?set YOUTUBE_URL_A}
+      YOUTUBE_URL_B: ${YOUTUBE_URL_B:?set YOUTUBE_URL_B}
+      TRAD_BITRATE: ${TRAD_BITRATE:-48k}
+    ports:
+      - "8890:8890/udp"
+      - "8189:8189/udp"
+    expose:
+      - "8889"
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # Only the WHEP endpoints of the MediaMTX path "media/trad" are routed (D4);
+      # anything else under /media falls through to the web app, which returns 404.
+      # No stripPrefix: MediaMTX's session Location (/media/trad/whep/<secret>)
+      # must stay valid for the browser's PATCH/DELETE.
+      # MediaMTX: POST /media/trad/whep creates a session, PATCH/DELETE /media/trad/whep/<secret>.
+      # OPTIONS is used by MediaMTX's reader.js to discover ICE servers.
+      - "traefik.http.routers.ag-relay-whep.rule=Host(`${APP_HOST:?set APP_HOST}`) && PathRegexp(`^/media/trad/whep(/[^/]+)?$$`) && (Method(`GET`) || Method(`POST`) || Method(`PATCH`) || Method(`DELETE`) || Method(`OPTIONS`))"
+      - traefik.http.routers.ag-relay-whep.priority=1000
+      - traefik.http.routers.ag-relay-whep.entrypoints=websecure
+      - traefik.http.routers.ag-relay-whep.tls.certresolver=letsencrypt
+      - traefik.http.routers.ag-relay-whep.middlewares=ag-relay-auth
+      - traefik.http.routers.ag-relay-whep.service=ag-relay-whep
+      # Access check delegated to the web app; original headers (cookie) are forwarded.
+      - "traefik.http.middlewares.ag-relay-auth.forwardauth.address=${RELAY_AUTH_URL:?set RELAY_AUTH_URL}"
+      - traefik.http.middlewares.ag-relay-auth.forwardauth.trustForwardHeader=false
+      - traefik.http.services.ag-relay-whep.loadbalancer.server.port=8889
+
+networks:
+  dokploy-network:
+    external: true

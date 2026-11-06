@@ -1,0 +1,111 @@
+# MediaMTX configuration for the AG streaming relay (MediaMTX v1.21.x).
+#
+# Secrets and host-specific values are injected with MediaMTX's MTX_* env
+# overrides (see docker-compose.yml), never written here:
+#   MTX_AUTHINTERNALUSERS_0_USER   publish user for path "ag"
+#   MTX_AUTHINTERNALUSERS_0_PASS   publish password for path "ag"
+#   MTX_WEBRTCADDITIONALHOSTS      public IP(s) of the VPS, sent as ICE candidates
+#
+# Public surface (D4/D5): SRT :8890/udp (publish only, authenticated) and
+# WebRTC ICE :8189/udp. WebRTC HTTP :8889 is reached only through Traefik.
+# Everything else is disabled or bound to the container's loopback.
+
+logLevel: info
+logDestinations: [stdout]
+
+###############################################
+# Authentication (D5)
+
+authMethod: internal
+authInternalUsers:
+  # 0: OBS at the venue. Index 0 is referenced by the MTX_* overrides above.
+  - user: publisher
+    pass: CHANGE_ME_VIA_ENV
+    ips: []
+    permissions:
+      - action: publish
+        path: ag
+  # 1: the fan-out inside the container reads the full ingest and publishes
+  #    the interpretation feed.
+  - user: any
+    pass:
+    ips: ["127.0.0.1", "::1"]
+    permissions:
+      - action: read
+        path: ag
+      - action: publish
+        path: media/trad
+  # 2: anyone may read "media/trad". The real gate is Traefik ForwardAuth, and the
+  #    WebRTC HTTP port is not published on the host.
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: read
+        path: media/trad
+
+###############################################
+# Disabled interfaces
+
+api: false
+metrics: false
+pprof: false
+playback: false
+rtmp: false
+hls: false
+moq: false
+
+###############################################
+# RTSP: internal transport between MediaMTX and the fan-out only.
+# Bound to loopback, TCP only, so it is unreachable even from the Docker network.
+
+rtsp: true
+rtspTransports: [tcp]
+rtspEncryption: "no"
+rtspAddress: 127.0.0.1:8554
+
+###############################################
+# SRT ingest (public, publish credentials in the streamid)
+# streamid=publish:ag:<user>:<pass>
+
+srt: true
+srtAddress: :8890
+
+###############################################
+# WebRTC (WHEP) for the interpretation feed
+
+webrtc: true
+webrtcAddress: :8889
+webrtcEncryption: false
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: ""
+# Container interface IPs are not reachable from phones; only advertise the
+# VPS public IP(s) given in MTX_WEBRTCADDITIONALHOSTS.
+webrtcIPsFromInterfaces: false
+webrtcAdditionalHosts: []
+webrtcICEServers2: []
+
+###############################################
+# Paths
+
+pathDefaults:
+  source: publisher
+  record: false
+  # A reconnecting OBS (e.g. Wi-Fi -> 5G) replaces a stale session.
+  overridePublisher: true
+
+paths:
+  # Full multitrack ingest from OBS: 1 video + 3 audio
+  # (a:0 room, a:1 room + interpreter, a:2 interpreter only).
+  ag:
+    # Started when OBS's stream becomes available, stopped with SIGINT when it
+    # goes away (D1). The script supervises its own ffmpeg processes.
+    runOnAvailable: /relay-fanout.sh
+    runOnAvailableRestart: true
+
+  # Interpreter-only Opus feed, published by the fan-out, read over WHEP.
+  # Named "media/trad" so that the public URL /media/trad/whep maps 1:1 to
+  # MediaMTX without a Traefik stripPrefix: MediaMTX answers the WHEP POST with
+  # "Location: /<path>/whep/<secret>", which the browser then uses for
+  # PATCH/DELETE, so the path must match the public URL.
+  media/trad:
