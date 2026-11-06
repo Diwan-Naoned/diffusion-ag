@@ -77,6 +77,11 @@ TRAD_BITRATE=48k
 
 Environment changes only apply after **Redeploy**.
 
+**Auto-deploy**: Dokploy redeploys `ag-relay` on every push to `main`, which
+restarts the relay and cuts both YouTube streams and the interpretation feed for
+a few seconds. Turn auto-deploy **off** for `ag-relay` before the AG (and do not
+push to `main` while streaming), turn it back on afterwards.
+
 Network: UDP **8890** (SRT) and **8189** (WebRTC) must be open in the Hetzner
 firewall and on the host (no host firewall is active on the VPS today).
 
@@ -113,7 +118,8 @@ The laptop must not sleep: disable sleep / screen saver, keep it on mains power.
   Stream Key = key B, Audio Track **2** only
 
 **Local fallback relay** (once per AG, with internet):
-1. Docker Desktop installed on the laptop; a copy of this repository on it.
+1. Docker Desktop installed on the laptop (the venue laptop is the operator's
+   Mac, which already has it); a copy of this repository on it.
 2. `cp relay/.env.local.example relay/.env.local`, then fill in a publish
    password and the **same two YouTube URLs as in Dokploy**.
 3. `relay/fallback-local.sh prepare` (builds the image; `start` then works offline).
@@ -131,6 +137,7 @@ The laptop must not sleep: disable sleep / screen saver, keep it on mains power.
 **Day before**
 - [ ] New `RELAY_PUBLISH_PASS` set in Dokploy and in the OBS profiles
 - [ ] YouTube events created (section 2), keys in Dokploy, redeployed with the **production** compose path
+- [ ] Dokploy auto-deploy **off** for `ag-relay` (a push to `main` would restart the relay mid-stream)
 - [ ] Web app points to the right YouTube video IDs; `/auth/media` and `/salle` work
 - [ ] OBS profiles imported on the venue laptop, same OBS version, fallback profiles updated with the new keys/passwords
 - [ ] `relay/.env.local` holds the new YouTube keys; `relay/fallback-local.sh prepare` done; Docker Desktop starts
@@ -232,3 +239,4 @@ reload Traefik in Dokploy's Web Server settings.
     and, for `AG secours YouTube`, key B)
   - on the laptop: `relay/fallback-local.sh stop`, and clear the YouTube URLs in `relay/.env.local`
 - [ ] Optionally stop the `ag-relay` service in Dokploy until the next AG
+- [ ] Turn Dokploy auto-deploy back on if wanted
