@@ -50,18 +50,47 @@ stream; the relay recovers on its own (verified).
 
 ## Audio routing (Edit → Advanced Audio Properties → Tracks)
 
+OBS filters apply to a *source*, not to a track, so the room sound is added
+**twice**: once clean for track 1, once ducked for track 2.
+
 | Source | 1 | 2 | 3 | 4–6 |
 |---|---|---|---|---|
-| Room sound (venue mixer / room mic) | ✅ | ✅ | | |
-| Interpreter mic | | ✅ | ✅ | |
+| `Salle` (venue mixer / room mic) | ✅ | | | |
+| `Salle (trad)` (same device, added a second time) | | ✅ | | |
+| `Interprète` (interpreter mic) | | ✅ | ✅ | |
 | Everything else (desktop audio, other mics) | | | | |
 
 - Track 1 → YouTube A ("son de la salle")
-- Track 2 → YouTube B ("avec traduction")
+- Track 2 → YouTube B ("avec traduction"): room ducked under the interpreter
 - Track 3 → interpretation feed in the room (re-encoded to mono Opus 48 kb/s by the relay)
 
-Ducking of the room sound on track 2 under the interpreter's voice is covered in
-the runbook (`relay/docs/runbook.md`).
+Never put both room sources on the same track (they would sum and sound
+phasey). Set Audio Monitoring to *off* on `Salle (trad)`.
+
+### Ducking: Compressor on `Salle (trad)`
+
+Right-click `Salle (trad)` → Filters → + → **Compressor**:
+
+| Field | Value |
+|---|---|
+| Sidechain/Ducking Source | `Interprète` |
+| Ratio | 10:1 |
+| Threshold | −40 dB |
+| Attack | 5 ms |
+| Release | 600 ms |
+| Output Gain | 0 dB |
+
+Target: the room drops by about 15–20 dB while the interpreter speaks. Raise the
+threshold (e.g. −35 dB) for less ducking, lower it for more. Verified working on
+2026-11-06 with test voices; judged slightly too strong, to be tuned with the
+real microphones at the rehearsal (task 6.2).
+
+### Noise gate on `Interprète` (venue only)
+
+The interpreter's microphone picks up the room. Without a gate, that bleed keeps
+the room ducked permanently and adds room noise to track 3. Filters → + →
+**Noise Gate**, starting with Close Threshold −45 dB, Open Threshold −35 dB;
+adjust so the gate opens only on the interpreter's voice.
 
 ## Verification (2026-11-06, local stack)
 
