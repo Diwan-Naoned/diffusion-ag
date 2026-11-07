@@ -1,0 +1,55 @@
+# AG remote participation app, deployed as a Dokploy Compose app `ag-app` (design D14).
+#
+# Routing comes from the labels below (no domain in Dokploy's Domains tab):
+#   https://${APP_HOST}/*  -> this app (catch-all, priority 1)
+# The relay's WHEP router (priority 1000, relay/docker-compose.yml) takes
+# /media/trad/whep* on the same host and asks this app's /auth/media through
+# ForwardAuth at http://ag-app:3000/auth/media (network alias below).
+#
+# Required env (set in Dokploy, see .env.example):
+#   APP_HOST, SESSION_SECRET, BUREAU_PASSWORD
+# PUBLIC_URL defaults to https://${APP_HOST}.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-https://${APP_HOST:?set APP_HOST}}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      BUREAU_PASSWORD: ${BUREAU_PASSWORD:?set BUREAU_PASSWORD}
+      # Traefik reaches the app over dokploy-network; X-Forwarded-For is trusted only from there.
+      TRUSTED_PROXY_CIDR: ${TRUSTED_PROXY_CIDR:-10.0.0.0/8,172.16.0.0/12}
+      APP_TIME_ZONE: ${APP_TIME_ZONE:-Europe/Paris}
+    volumes:
+      # SQLite database: the AG's personal data. Keep it out of Dokploy volume
+      # backups (or use a retention under 7 days), see design D13/D14.
+      - ag-data:/data
+    expose:
+      - "3000"
+    networks:
+      dokploy-network:
+        aliases:
+          - ag-app
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # Catch-all for the host, below the relay's WHEP router (priority 1000).
+      - "traefik.http.routers.ag-app.rule=Host(`${APP_HOST}`)"
+      - traefik.http.routers.ag-app.priority=1
+      - traefik.http.routers.ag-app.entrypoints=websecure
+      - traefik.http.routers.ag-app.tls.certresolver=letsencrypt
+      - traefik.http.routers.ag-app.service=ag-app
+      - "traefik.http.routers.ag-app-http.rule=Host(`${APP_HOST}`)"
+      - traefik.http.routers.ag-app-http.priority=1
+      - traefik.http.routers.ag-app-http.entrypoints=web
+      - traefik.http.routers.ag-app-http.middlewares=redirect-to-https@file
+      - traefik.http.routers.ag-app-http.service=ag-app
+      - traefik.http.services.ag-app.loadbalancer.server.port=3000
+
+volumes:
+  ag-data:
+
+networks:
+  dokploy-network:
+    external: true

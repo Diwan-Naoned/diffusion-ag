@@ -71,7 +71,7 @@ RELAY_PUBLIC_IP=195.201.194.221
 YOUTUBE_URL_A=rtmps://a.rtmps.youtube.com/live2/<key A>
 YOUTUBE_URL_B=rtmps://a.rtmps.youtube.com/live2/<key B>
 APP_HOST=<web app host>
-RELAY_AUTH_URL=http://<app service>:<port>/auth/media
+RELAY_AUTH_URL=http://ag-app:3000/auth/media
 TRAD_BITRATE=48k
 ```
 
