@@ -1,5 +1,6 @@
 import type { PublicAssembly, PublicIntervention } from '../domain/views.ts';
 import { formatLongDate, type Entry, type Translator } from '../i18n/index.ts';
+import { HomeLink } from './home.tsx';
 import { Layout } from './layout.tsx';
 
 export interface ParticipantData {
@@ -35,7 +36,7 @@ export function ParticipantPage({ tr, data }: { tr: Translator; data: Participan
       title={`${tr.t('participant.title')} — ${ag.name}`}
       heading={tr.t('participant.title')}
       eyebrow={tr.t('app.eyebrow', { date: formatLongDate(tr.lang, ag.date) })}
-      path="/"
+      path="/distance"
       scripts={['participant']}
       data={data}
       headerTools={
@@ -44,7 +45,8 @@ export function ParticipantPage({ tr, data }: { tr: Translator; data: Participan
         </span>
       }
     >
-      <main class="page">
+      <main class="page stack">
+        <HomeLink tr={tr} />
         <div class="participant">
           <section class="participant__stream stack" aria-labelledby="stream-title">
             <div class="section-title">

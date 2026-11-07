@@ -30,6 +30,17 @@ export const fr = {
   'code.tooMany': 'Trop de tentatives. Réessayez dans quelques minutes.',
   'code.bureau': 'Espace bureau',
 
+  // Landing page: in the room or remote
+  'home.question': "Comment suivez-vous l'AG ?",
+  'home.intro': "Choisissez selon l'endroit où vous êtes. Vous pourrez changer à tout moment.",
+  'home.room.title': 'Je suis dans la salle',
+  'home.room.text': "Écoutez l'interprétation en français sur votre téléphone, avec des écouteurs.",
+  'home.room.cta': "Écouter l'interprétation",
+  'home.remote.title': 'Je suis à distance',
+  'home.remote.text': 'Suivez le direct vidéo et proposez une intervention au bureau.',
+  'home.remote.cta': 'Suivre le direct',
+  'home.back': 'Accueil',
+
   // Participant page: stream
   'participant.title': "Suivre l'AG à distance",
   'stream.heading': 'Le direct',
@@ -118,7 +129,6 @@ export const fr = {
   'salle.state.paused': "L'écoute a été interrompue par votre téléphone (appel, alarme, autre application).",
   'salle.resume': "Reprendre l'écoute",
   'salle.unsupported': "Votre navigateur ne permet pas l'écoute. Essayez avec un navigateur à jour.",
-  'salle.back': 'Retour au direct',
   'salle.mediaTitle': 'Interprétation en français',
 
   // Bureau: login

@@ -41,9 +41,11 @@ l'AG : les pages ouvertes se mettent à jour seules.
 ### 4. Diffuser le lien
 
 - **Convocation** : copiez le **lien de participation** (bouton « Copier le lien ») et mettez-le
-  dans l'e-mail de convocation. Ce lien donne directement accès à la page de l'AG.
+  dans l'e-mail de convocation. Ce lien ouvre la page d'accueil de l'AG, où chacun·e choisit
+  **« Je suis à distance »** (le direct et le formulaire) ou **« Je suis dans la salle »**.
 - **Salle** : **Imprimer le QR code** et affichez-le dans la salle. Les personnes présentes le
-  scannent pour écouter l'interprétation sur leur téléphone (page « Écouter l'interprétation »).
+  scannent puis choisissent **« Je suis dans la salle »** pour écouter l'interprétation sur leur
+  téléphone.
 - Une personne qui n'a que le code (sans le lien) peut le taper sur la page d'accès,
   en majuscules ou minuscules.
 

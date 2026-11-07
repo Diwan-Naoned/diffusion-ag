@@ -8,6 +8,7 @@ import type { AppEnv } from './types.ts';
 import { LIMITS } from '../domain/types.ts';
 import { publicAssembly, publicIntervention } from '../domain/views.ts';
 import { pickStrings, type Key } from '../i18n/index.ts';
+import { HomePage } from '../views/home.tsx';
 import { ParticipantPage } from '../views/participant.tsx';
 import { SallePage } from '../views/salle.tsx';
 
@@ -73,10 +74,17 @@ export function participantRoutes(ctx: AppContext) {
   });
 
   app.use('/', participantAccess(deps, 'page'));
+  app.use('/distance', participantAccess(deps, 'page'));
   app.use('/salle', participantAccess(deps, 'page'));
   app.use('/api/*', participantAccess(deps, 'api'));
 
+  // Landing page (from the participant link and the room QR code): in the room or remote.
   app.get('/', (c) => {
+    const ag = ctx.store.getAssembly(c.get('access').assemblyId)!;
+    return c.html(HomePage({ tr: c.get('tr'), ag }));
+  });
+
+  app.get('/distance', (c) => {
     const { assemblyId, deviceId } = c.get('access');
     const ag = ctx.store.getAssembly(assemblyId)!;
     const tr = c.get('tr');

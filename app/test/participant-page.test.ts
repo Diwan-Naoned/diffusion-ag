@@ -20,7 +20,7 @@ async function setup() {
 describe('participant page', () => {
   it('renders the stream switch, the "not started" placeholder, the no-chat notice and the form, in phone order', async () => {
     const t = await setup();
-    const html = await (await t.p.get('/')).text();
+    const html = await (await t.p.get('/distance')).text();
     expect(html).toContain('Son de la salle');
     expect(html).toContain('Avec traduction en français');
     expect(html).toContain("Le direct n&#39;a pas encore commencé");
@@ -36,7 +36,7 @@ describe('participant page', () => {
   it('embeds the video IDs and the strings the browser module needs, in the interface language', async () => {
     const t = await setup();
     t.store.updateDetails(t.ag.id, { name: 'AG 2026', date: '2026-11-21', youtubeAId: 'aaaaaaaaaaa', youtubeBId: 'bbbbbbbbbbb' });
-    const data = pageData(await (await t.p.get('/', { 'accept-language': 'br' })).text());
+    const data = pageData(await (await t.p.get('/distance', { 'accept-language': 'br' })).text());
     expect(data.assembly).toMatchObject({ youtubeAId: 'aaaaaaaaaaa', youtubeBId: 'bbbbbbbbbbb' });
     expect(data.lang).toBe('br');
     expect(data.strings['status.queued']).toBe('N’eo ket bet lennet c’hoazh');
@@ -60,7 +60,7 @@ describe('"AG terminée" (8.5)', () => {
     const t = await setup();
     await t.p.postJson('/api/interventions', { name: 'Gwen', text: 'Ma question' });
     t.store.lifecycle(t.ag.id, 'end', 'Anna');
-    const html = await (await t.p.get('/')).text();
+    const html = await (await t.p.get('/distance')).text();
     expect(html).toMatch(/<form class="card form-card" data-form="true" hidden=""/);
     expect(html).toMatch(/<div class="card stack" data-ended="true" role="status">/);
     expect(html).toContain('AG terminée');
@@ -84,5 +84,42 @@ describe('"AG terminée" (8.5)', () => {
     expect(snap.assembly.state).toBe('ended');
     expect(snap.mine).toHaveLength(1);
     await again.close();
+  });
+});
+
+describe('landing page', () => {
+  it('offers the in-room and the remote choices, in the interface language', async () => {
+    const t = await setup();
+    const html = await (await t.p.get('/')).text();
+    expect(html).toContain('Je suis dans la salle');
+    expect(html).toContain('Je suis à distance');
+    expect(html).toMatch(/<a href="\/salle" class="choice-card">/);
+    expect(html).toMatch(/<a href="\/distance" class="choice-card">/);
+    expect(html).toContain('AG 2026');
+    const br = await (await t.p.get('/', { 'accept-language': 'br' })).text();
+    expect(br).toContain('Er sal emaon');
+  });
+
+  it('is where the participant link lands, and both pages link back to it', async () => {
+    const t = makeTestApp();
+    const ag = t.store.createAssembly({ name: 'AG 2026', date: '2026-11-21' });
+    const p = new Client(t.app);
+    const res = await p.get(`/?c=${ag.code}`);
+    expect(res.status).toBe(302);
+    expect(res.headers.get('location')).toBe('/');
+    for (const path of ['/distance', '/salle']) {
+      const page = await p.get(path);
+      expect(page.status).toBe(200);
+      expect(await page.text()).toMatch(/<a href="\/" class="text-link back-link">/);
+    }
+  });
+
+  it('asks for the code on every participant page without access', async () => {
+    const t = makeTestApp();
+    for (const path of ['/', '/distance', '/salle']) {
+      const page = await new Client(t.app).get(path);
+      expect(page.status).toBe(401);
+      expect(await page.text()).toContain('action="/code"');
+    }
   });
 });

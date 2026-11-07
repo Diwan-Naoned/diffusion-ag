@@ -33,6 +33,17 @@ export const br: Partial<Dict> = {
   'code.tooMany': 'Re a daolioù-esae. Klaskit en-dro a-benn un nebeut munutennoù.',
   'code.bureau': 'Lec’h ar burev',
 
+  // Landing page: in the room or remote
+  'home.question': 'Penaos e heuliit ar vodadeg ?',
+  'home.intro': 'Dibabit hervez al lec’h m’emaoc’h. Gallout a reot cheñch forzh pegoulz.',
+  'home.room.title': 'Er sal emaon',
+  'home.room.text': 'Selaouit an droidigezh e galleg war ho pellgomzer, gant selaouelloù.',
+  'home.room.cta': 'Selaou an droidigezh',
+  'home.remote.title': 'A-bell emaon',
+  'home.remote.text': 'Heuliit ar skignañ war-eeun ha kinnigit ur gomzadenn d’ar burev.',
+  'home.remote.cta': 'Heuliañ war-eeun',
+  'home.back': 'Degemer',
+
   // Participant page: stream
   'participant.title': 'Heuliañ ar vodadeg a-bell',
   'stream.heading': 'War-eeun',
@@ -121,7 +132,6 @@ export const br: Partial<Dict> = {
   'salle.state.paused': 'Troc’het eo bet ar selaou gant ho pellgomzer (galv, dihuner, arload all).',
   'salle.resume': 'Adkregiñ gant ar selaou',
   'salle.unsupported': 'Ho merdeer ne c’hall ket lenn ar son. Klaskit gant ur merdeer hizivaet.',
-  'salle.back': 'Distreiñ d’ar skignañ war-eeun',
   'salle.mediaTitle': 'Troidigezh e galleg',
 
   // Bureau: login

@@ -30,7 +30,7 @@ A person without a valid cookie SHALL see only a code entry page explaining that
 
 #### Scenario: Typing the code
 - **WHEN** a person without a cookie types the valid code, in any letter case
-- **THEN** they get the participant access cookie and land on the participant page
+- **THEN** they get the participant access cookie and land on the landing page
 
 #### Scenario: Visitor without a code
 - **WHEN** a client without a cookie requests any participant page or API

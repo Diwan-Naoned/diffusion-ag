@@ -1,5 +1,6 @@
 import type { Assembly } from '../domain/types.ts';
 import { formatLongDate, type Entry, type Translator } from '../i18n/index.ts';
+import { HomeLink } from './home.tsx';
 import { Layout } from './layout.tsx';
 
 export interface SalleData {
@@ -22,6 +23,7 @@ export function SallePage({ tr, ag, data }: { tr: Translator; ag: Assembly; data
       data={data}
     >
       <main class="page page--narrow stack stack--lg">
+        <HomeLink tr={tr} />
         <section class="card stack" aria-labelledby="salle-title">
           <div class="section-title">
             <h1 id="salle-title">{tr.t('salle.title')}</h1>
@@ -47,9 +49,6 @@ export function SallePage({ tr, ag, data }: { tr: Translator; ag: Assembly; data
           </div>
           <audio data-audio playsinline></audio>
         </section>
-        <a href="/" class="text-link" style="align-self:flex-start">
-          {tr.t('salle.back')}
-        </a>
       </main>
     </Layout>
   );

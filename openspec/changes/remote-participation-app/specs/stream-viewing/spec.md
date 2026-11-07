@@ -6,6 +6,17 @@ Lets remote participants watch the AG with either the original room sound or the
 
 ## ADDED Requirements
 
+### Requirement: Landing page
+The participant link and the room QR code SHALL open a landing page with two choices, "Je suis dans la salle" (the listening page) and "Je suis à distance" (the participant page), and both pages SHALL link back to it.
+
+#### Scenario: Choosing how to follow the AG
+- **WHEN** a participant opens the participant link or scans the room QR code
+- **THEN** they see the two choices and reach the listening page or the participant page in one tap
+
+#### Scenario: Changing one's mind
+- **WHEN** a participant on the listening page or the participant page follows the "Accueil" link
+- **THEN** they are back on the landing page
+
 ### Requirement: Two stream choices
 The participant page SHALL embed a YouTube player and offer two choices: "Son de la salle" (stream A) and "Avec traduction en français" (stream B), with "Son de la salle" selected by default.
 
@@ -35,7 +46,7 @@ The YouTube video IDs of streams A and B SHALL be set by the Bureau for each AG;
 - **THEN** the player area shows "Le direct n'a pas encore commencé"
 
 ### Requirement: In-room interpretation listening page
-The app SHALL provide a listening page, reachable from the participant page and through the room QR code, that plays the interpreter-only feed on a user action.
+The app SHALL provide a listening page, reachable from the landing page and from the participant page, that plays the interpreter-only feed on a user action.
 
 #### Scenario: Starting to listen
 - **WHEN** a participant with access opens the listening page and presses "Écouter"
