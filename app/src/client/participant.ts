@@ -53,7 +53,10 @@ function renderPlayer() {
   if (id === null) return;
   const label = tr.t(stream === 'a' ? 'stream.a.label' : 'stream.b.label');
   const iframe = h('iframe', {
-    src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&playsinline=1`,
+    // autoplay=1: starts with sound where the browser allows it (it does after a click, e.g. a
+    // stream switch); otherwise YouTube shows its play button. Not muted on purpose: a silent
+    // start would look broken to a remote participant.
+    src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&playsinline=1`,
     title: tr.t('stream.playerTitle', { stream: label }),
     referrerpolicy: data.embedReferrerPolicy,
     allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen',
