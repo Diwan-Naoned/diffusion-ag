@@ -137,8 +137,16 @@ async function connect(state: 'connecting' | 'reconnecting' | 'offline' = 'conne
     });
     if (mine !== attempt) return;
     if (res.status === 401) {
-      window.location.reload(); // access lost: show the code page
-      return;
+      // The feed is refused both when access is lost and while the AG is not open yet
+      // (participant access starts in preparation, media access only in progress, D10).
+      // Only reload (to show the code page) when the participant access itself is gone.
+      const ping = await fetch('/api/ping', { credentials: 'same-origin', cache: 'no-store' }).catch(() => null);
+      if (mine !== attempt) return;
+      if (ping?.status === 401) {
+        window.location.reload();
+        return;
+      }
+      return scheduleRetry('offline');
     }
     if (res.status === 404) return scheduleRetry('offline'); // path not published
     if (res.status !== 201) return scheduleRetry('reconnecting');
