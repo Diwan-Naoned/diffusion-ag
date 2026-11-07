@@ -192,14 +192,6 @@ for (const button of $$<HTMLButtonElement>('[data-format]')) {
   });
 }
 
-// Keep the counter, countdown and send button visible above the on-screen keyboard (D17).
-const actions = $('[data-form-actions]');
-const revealActions = () => {
-  if (document.activeElement === textInput) actions.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-};
-textInput.addEventListener('focus', () => window.setTimeout(revealActions, 300));
-window.visualViewport?.addEventListener('resize', revealActions);
-
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (sendButton.disabled) return;

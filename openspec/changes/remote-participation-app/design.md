@@ -158,7 +158,7 @@ One pure function `renderIntervention(text) -> safe HTML` escapes everything fir
 - **Touch targets.** A shared `--touch-min: 44px` used by every button, chip, tab, selector option and slider thumb. Range inputs get custom thumb and track styles sized for touch. No hover-only affordances; `:focus-visible` styles are kept.
 - **Reading view.** A fixed full-screen layer on screens under 1024 px, sized with `100dvh` so mobile toolbars don't cut it off. A header and footer hold the controls, and the text scrolls between them.
 - **Dialogs.** Native `<dialog>`, shown as a centered modal on desktop and as a full-screen sheet under 640 px.
-- **On-screen keyboard.** The form's counter, countdown and send button sit directly under the textarea, not in a fixed footer. `scrollIntoView` on focus keeps them visible above the keyboard.
+- **On-screen keyboard.** The form's counter, countdown and send button sit directly under the textarea, not in a fixed footer. Scrolling is left to the browser: forcing the actions into view on focus fought the user's own scrolling while typing, especially in landscape. Being right under the textarea, they stay one short scroll away.
 - **Viewport.** `<meta name="viewport" content="width=device-width, initial-scale=1">`, with no zoom blocking.
 - **YouTube player.** A wrapper with `aspect-ratio: 16/9; width: 100%`.
 - **Rotation.** Rotating never re-renders the page or reloads the iframe, since layout is pure CSS. The draft, stream choice and scroll position are untouched.

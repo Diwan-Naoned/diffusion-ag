@@ -123,8 +123,8 @@ export function ParticipantPage({ tr, data }: { tr: Translator; data: Participan
                   <textarea id="f-text" name="text" class="textarea" rows={6} required placeholder={tr.t('form.placeholder')} aria-describedby="f-counter f-over"></textarea>
                 </div>
               </div>
-              {/* Counter, countdown and send button right under the textarea (on-screen keyboard, D17). */}
-              <div class="stack" style="gap:8px" data-form-actions>
+              {/* Counter, countdown and send button right under the textarea, one short scroll away with the on-screen keyboard open (D17). */}
+              <div class="stack" style="gap:8px">
                 <div class="form-status">
                   <span class="countdown" data-countdown aria-live="polite"></span>
                   <span id="f-counter" data-counter></span>
