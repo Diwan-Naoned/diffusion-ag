@@ -29,7 +29,7 @@
 ## 5. AG lifecycle core (spec: assembly-lifecycle)
 
 - [x] 5.1 Implement the AG state machine (create, open, close/reopen submissions, end, reopen if no deletion scheduled, single active AG) as pure functions plus routes publishing state changes on the event bus, and verify every transition and refusal with tests, including the SSE event emitted for each
-- [ ] 5.2 Build the Bureau AG settings page (D11: name/date, YouTube IDs, code regenerate, link copy, QR SVG + print view, state buttons) and verify manually that the QR code opens the participant link on a phone and pass the responsive check (D17)
+- [x] 5.2 Build the Bureau AG settings page (D11: name/date, YouTube IDs, code regenerate, link copy, QR SVG + print view, state buttons) and verify manually that the QR code opens the participant link on a phone and pass the responsive check (D17)
 
 ## 6. Stream viewing (spec: stream-viewing)
 
@@ -58,12 +58,12 @@
 ## 9. Packaging and deployment
 
 - [x] 9.1 Write the multi-stage `app/Dockerfile` and verify the image starts and serves the code page with a mounted `/data` volume
-- [ ] 9.2 Deploy to Dokploy (host, env vars, `/data` volume excluded from backups or with short retention) and verify the app over HTTPS with a test AG
-- [ ] 9.3 Verify SSE through the real Traefik: events reach the browser immediately (no buffering), the connection is served over HTTP/2, and an idle stream stays open more than 10 minutes on Wi-Fi and on 4G/5G
+- [x] 9.2 Deploy to Dokploy (host, env vars, `/data` volume excluded from backups or with short retention) and verify the app over HTTPS with a test AG
+- [x] 9.3 Verify SSE through the real Traefik: events reach the browser immediately (no buffering), the connection is served over HTTP/2, and an idle stream stays open more than 10 minutes on Wi-Fi and on 4G/5G
 - [ ] 9.4 Write `app/docs/bureau-guide.md` (preparing an AG, during the AG including the Régulation sliders, after the AG: export, confirm, delete) and verify a Bureau member can follow it on the test AG
 
 ## 10. Integration checks
 
 - [ ] 10.1 Have a Breton speaker of the association review every string in `br.ts` using the `docs/i18n.md` checklist, and verify `npm run i18n:check` reports no missing key
-- [ ] 10.2 With the `streaming-relay` stack deployed, verify `/salle` plays the interpretation with a participant cookie, and that `/media/trad/whep` returns 401 without one
+- [x] 10.2 With the `streaming-relay` stack deployed, verify `/salle` plays the interpretation with a participant cookie, and that `/media/trad/whep` returns 401 without one
 - [ ] 10.3 Full rehearsal with a test AG, Bureau and participants on phones and laptops in both languages: submit, read (with one Bureau member reading from a phone or tablet), reject, put back, move both sliders, close submissions, end, export CSV and PDF, confirm, schedule deletion, redeploy the app mid-rehearsal (data must survive), cancel and reschedule deletion; verify every step behaves as specified
