@@ -1,0 +1,89 @@
+/* Printable export (D12): A4 pages, one intervention never split when it fits, no controls. */
+@page {
+  size: A4;
+  margin: 18mm 16mm;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 800px;
+  padding: 24px 16px;
+  font-family: "Fira Sans Condensed", "Arial Narrow", sans-serif;
+  font-size: 12pt;
+  line-height: 1.45;
+  color: #231f20;
+  background: #fff;
+}
+
+.export-head {
+  border-bottom: 3px solid var(--accent, #f0b100);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.export-head h1 {
+  margin: 0 0 4px;
+  font-family: var(--font-display, sans-serif);
+  font-size: 20pt;
+  color: var(--brand, #2a2a7e);
+}
+
+.export-head p {
+  margin: 0;
+}
+
+.export-head button {
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 8px 20px;
+  border: 2px solid #2a2a7e;
+  border-radius: 999px;
+  background: #2a2a7e;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.export-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.export-item {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid #d6d5e0;
+}
+
+.export-meta,
+.export-status {
+  margin: 0 0 4px;
+}
+
+.export-status {
+  font-size: 11pt;
+  color: #3d3a45;
+}
+
+.rich p {
+  margin: 0 0 0.4em;
+}
+
+.rich ul {
+  margin: 0 0 0.4em;
+  padding-left: 1.4em;
+}
+
+@media print {
+  body {
+    max-width: none;
+    padding: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

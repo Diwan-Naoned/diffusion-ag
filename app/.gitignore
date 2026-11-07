@@ -1,0 +1,8 @@
+node_modules/
+dist/
+static/js/
+data/
+*.db
+*.db-*
+.env.*
+!.env.example

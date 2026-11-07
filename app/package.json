@@ -1,0 +1,36 @@
+{
+  "name": "ag-remote-participation",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/build-client.mjs --watch & tsx watch src/server.ts",
+    "build": "tsc --noEmit && node scripts/build-client.mjs && node scripts/build-server.mjs",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "i18n:check": "tsx scripts/i18n-check.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "better-sqlite3": "^13.0.3",
+    "hono": "^4.13.16",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@fontsource/fira-sans-condensed": "^5.3.0",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.6",
+    "@types/qrcode": "^1.5.6",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@13.0.3": true,
+    "esbuild@0.28.2": true
+  }
+}
