@@ -38,7 +38,7 @@ func (r countingReader) Read(p []byte) (int, error) {
 	return n, nil
 }
 
-func speedTest(base string, dur time.Duration, streams int) speedResult {
+func speedTest(ctx context.Context, base string, dur time.Duration, streams int) speedResult {
 	var r speedResult
 	cl := &http.Client{Timeout: dur + 15*time.Second}
 
@@ -46,7 +46,8 @@ func speedTest(base string, dur time.Duration, streams int) speedResult {
 	var pings []time.Duration
 	for i := 0; i < 5; i++ {
 		t := time.Now()
-		res, err := cl.Get(base + "/speed/ip")
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, base+"/speed/ip", nil)
+		res, err := cl.Do(req)
 		if err != nil {
 			r.Error = fmt.Sprintf("serveur injoignable: %v", err)
 			return r
@@ -74,7 +75,7 @@ func speedTest(base string, dur time.Duration, streams int) speedResult {
 	// Download.
 	{
 		var n atomic.Int64
-		ctx, cancel := context.WithTimeout(context.Background(), dur)
+		ctx, cancel := context.WithTimeout(ctx, dur)
 		var wg sync.WaitGroup
 		t := time.Now()
 		for i := 0; i < streams; i++ {
@@ -114,7 +115,7 @@ func speedTest(base string, dur time.Duration, streams int) speedResult {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				req, _ := http.NewRequest(http.MethodPost, base+"/speed/up", countingReader{n: &n, buf: buf, stop: stop})
+				req, _ := http.NewRequestWithContext(ctx, http.MethodPost, base+"/speed/up", countingReader{n: &n, buf: buf, stop: stop})
 				req.Header.Set("Content-Type", "application/octet-stream")
 				res, err := cl.Do(req)
 				if err == nil {
@@ -123,7 +124,10 @@ func speedTest(base string, dur time.Duration, streams int) speedResult {
 				}
 			}()
 		}
-		time.Sleep(dur)
+		select {
+		case <-time.After(dur):
+		case <-ctx.Done():
+		}
 		close(stop)
 		elapsed := time.Since(t)
 		wg.Wait()

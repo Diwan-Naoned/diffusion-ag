@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -121,7 +122,53 @@ const (
 	cGrey   = "\033[90m"
 )
 
-var stdin = bufio.NewReader(os.Stdin)
+// Console input is read in the background so that a prompt can give up when
+// the user presses Ctrl-C (promptAbort is closed).
+var (
+	lines       = make(chan string)
+	promptAbort <-chan struct{}
+	stdinClosed bool
+)
+
+func init() {
+	go func() {
+		r := bufio.NewReader(os.Stdin)
+		for {
+			line, err := r.ReadString('\n')
+			if line != "" || err == nil {
+				lines <- line
+			}
+			if err != nil {
+				close(lines)
+				return
+			}
+		}
+	}()
+}
+
+// readLine returns the next line, or "" if the prompt was aborted or stdin closed.
+func readLine() string {
+	select {
+	case l, ok := <-lines:
+		if !ok { // stdin closed (only when piped): behave like an empty answer
+			stdinClosed = true
+			return ""
+		}
+		return l
+	case <-promptAbort:
+		fmt.Println()
+		return ""
+	}
+}
+
+func aborted() bool {
+	select {
+	case <-promptAbort:
+		return promptAbort != nil
+	default:
+		return false
+	}
+}
 
 func say(format string, a ...any) { fmt.Printf(format+"\n", a...) }
 
@@ -131,21 +178,26 @@ func title(s string) {
 }
 
 func ask(prompt string) string {
-	fmt.Print(cBold + prompt + cReset + " ")
-	line, _ := stdin.ReadString('\n')
-	return strings.TrimSpace(strings.ToUpper(line))
+	return strings.ToUpper(askRaw(prompt))
 }
 
 func askRaw(prompt string) string {
+	if aborted() {
+		return ""
+	}
 	fmt.Print(cBold + prompt + cReset + " ")
-	line, _ := stdin.ReadString('\n')
-	return strings.TrimSpace(line)
+	livePrompt(prompt)
+	defer livePrompt("")
+	return strings.TrimSpace(readLine())
 }
 
 // askYN asks a yes/no question (O/N, or ? for "don't know") and records it.
 func askYN(rep *report, q string) string {
 	for {
 		a := ask(q + " (O = oui, N = non, ? = je ne sais pas)")
+		if aborted() {
+			return ""
+		}
 		switch a {
 		case "O", "OUI", "Y":
 			rep.addAnswer(q, "oui")
@@ -167,6 +219,8 @@ func verdictLabel(v string) string {
 		return cGreen + "[ OK ]" + cReset
 	case "warn":
 		return cYellow + "[ ATTENTION ]" + cReset
+	case "interrupted":
+		return cGrey + "[ INTERROMPU ]" + cReset
 	default:
 		return cRed + "[ PROBLÈME ]" + cReset
 	}
@@ -211,13 +265,38 @@ func main() {
 	rep := &report{ID: time.Now().Format("20060102-150405") + "-" + randHex(3), Version: version,
 		Started: time.Now(), Status: "running", OS: osName()}
 
+	liveStep("", "Programme lancé")
+	startLive(cfg, rep.ID)
+	uploadReportAsync(cfg, rep) // so the test shows up in the list right away
+
 	ctx, cancel := context.WithCancel(context.Background())
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt)
+	promptAbort = ctx.Done()
+	// Ctrl-C: stop cleanly (close connections, save and upload the report).
+	// A second Ctrl-C quits at once. Closing the window (SIGTERM on Windows,
+	// with a few seconds before the process is killed): upload what we have.
+	sig := make(chan os.Signal, 2)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		<-sig
-		say("\n" + cYellow + "Arrêt demandé, fermeture des connexions…" + cReset)
-		cancel()
+		first := true
+		for s := range sig {
+			if s == syscall.SIGTERM {
+				rep.mu.Lock()
+				rep.Status = "closed"
+				rep.mu.Unlock()
+				liveStep("", "Fenêtre fermée par l'utilisatrice")
+				postLive(cfg, rep.ID)
+				uploadReport(cfg, rep)
+				os.Exit(1)
+			}
+			if !first {
+				say("\n" + cRed + "Arrêt immédiat." + cReset)
+				os.Exit(130)
+			}
+			first = false
+			liveStep("", "Arrêt demandé (Ctrl-C), fermeture des connexions")
+			say("\n" + cYellow + "Arrêt demandé, fermeture des connexions… (Ctrl-C encore une fois pour quitter tout de suite)" + cReset)
+			cancel()
+		}
 	}()
 
 	say(cBold+"Test de la connexion pour l'AG"+cReset+cGrey+" (version %s)"+cReset, version)
@@ -231,11 +310,15 @@ func main() {
 	check := *checkFlag
 	if !check && *only == "" {
 		say("")
+		liveStep("menu", "Choix du mode (1 = vérification rapide, 2 = test complet)")
 		say(cBold + "Que voulez-vous faire ?" + cReset)
 		say("  1 : Vérification rapide, à la maison (1 minute, utilise très peu de connexion)")
 		say("  2 : Test complet, dans la salle (environ 30 minutes)")
 		for {
 			a := ask("Tapez 1 ou 2 puis Entrée :")
+			if ctx.Err() != nil || stdinClosed {
+				os.Exit(130)
+			}
 			if a == "1" || a == "2" {
 				check = a == "1"
 				break
@@ -261,6 +344,7 @@ func main() {
 
 	if runWifi && ctx.Err() == nil {
 		title("ÉTAPE 1 sur 2 : Wi-Fi de la salle")
+		liveStep("wifi", "Préparation : ordinateur à la régie, sur secteur, connecté au Wi-Fi de la salle")
 		say("1. Placez cet ordinateur à l'endroit où sera l'ordinateur de diffusion")
 		say("   (là où se trouvera la régie, près de la scène).")
 		say("2. Branchez-le sur secteur.")
@@ -274,6 +358,7 @@ func main() {
 
 	if runMobile && ctx.Err() == nil {
 		title("ÉTAPE 2 sur 2 : 4G/5G (partage de connexion du téléphone)")
+		liveStep("mobile", "Passage de l'ordinateur sur le partage de connexion du téléphone")
 		say("1. Sur le téléphone Android, activez le point d'accès mobile :")
 		say("   Paramètres > Connexions > Point d'accès mobile et modem > Point d'accès mobile.")
 		say("2. Sur cet ordinateur, quittez le Wi-Fi de la salle et connectez-vous")
@@ -315,6 +400,16 @@ func main() {
 }
 
 func finish(cfg *config, rep *report) {
+	promptAbort = nil // the last prompt waits for Enter even after Ctrl-C
+	defer func() {
+		var parts []string
+		for _, ph := range rep.Phases {
+			parts = append(parts, ph.Name+" : "+ph.Verdict)
+		}
+		status := map[string]string{"done": "terminé", "interrupted": "interrompu par Ctrl-C"}[rep.Status]
+		liveStep("", "Fin du test ("+status+") : "+strings.Join(parts, ", "))
+		postLive(cfg, rep.ID)
+	}()
 	title("RÉSULTAT")
 	for _, ph := range rep.Phases {
 		name := "Wi-Fi de la salle"
@@ -386,6 +481,7 @@ func loadConfig(path string) (*config, error) {
 // (~0.3 Mb/s, about 2 MB in total) and one listener, without load.
 func runCheck(ctx context.Context, cfg *config, rep *report, clip *tsClip) {
 	title("Vérification rapide")
+	liveStep("check", "Connexion au serveur")
 	ph := &phaseResult{Name: "check", Started: time.Now(), SRTSamples: map[string][]srtSample{}}
 	rep.mu.Lock()
 	rep.Phases = append(rep.Phases, ph)
@@ -397,7 +493,11 @@ func runCheck(ctx context.Context, cfg *config, rep *report, clip *tsClip) {
 		}
 	}
 	say("Connexion au serveur…")
-	ph.Speed = speedTest(cfg.BaseURL, 0, 0)
+	ph.Speed = speedTest(ctx, cfg.BaseURL, 0, 0)
+	if ctx.Err() != nil {
+		ph.Verdict, ph.Summary = "interrupted", "vérification interrompue"
+		return
+	}
 	if ph.Speed.Error != "" {
 		ph.Error = ph.Speed.Error
 		ph.Verdict, ph.Summary = "fail", "impossible de joindre le serveur ("+ph.Speed.Error+")"
@@ -409,7 +509,7 @@ func runCheck(ctx context.Context, cfg *config, rep *report, clip *tsClip) {
 	runProfile(ctx, cfg, rep, ph, "léger", clip, []stageConf{{Listeners: 1, Seconds: 20}}, nil)
 	ph.Verdict, ph.Summary = "fail", "la vérification a échoué"
 	if ctx.Err() != nil {
-		ph.Summary = "vérification interrompue"
+		ph.Verdict, ph.Summary = "interrupted", "vérification interrompue"
 		return
 	}
 	if len(ph.Stages) > 0 {
@@ -428,6 +528,9 @@ func runCheck(ctx context.Context, cfg *config, rep *report, clip *tsClip) {
 }
 
 func runPhase(ctx context.Context, cfg *config, rep *report, name string, c1080, c720 *tsClip) *phaseResult {
+	if ctx.Err() != nil {
+		return &phaseResult{Name: name}
+	}
 	ph := &phaseResult{Name: name, Started: time.Now(), SRTSamples: map[string][]srtSample{}}
 	rep.mu.Lock()
 	rep.Phases = append(rep.Phases, ph)
@@ -447,7 +550,13 @@ func runPhase(ctx context.Context, cfg *config, rep *report, name string, c1080,
 	// 1. Raw throughput.
 	say("")
 	say(cBold + "Mesure du débit…" + cReset)
-	ph.Speed = speedTest(cfg.BaseURL, time.Duration(cfg.SpeedSeconds)*time.Second, 4)
+	liveStep(name, fmt.Sprintf("Mesure du débit (%d s)", 2*cfg.SpeedSeconds))
+	liveFields("Réseau", orDash(wifiField(ph.WifiInfo, "SSID")), "Signal Wi-Fi", orDash(wifiField(ph.WifiInfo, "Signal")), "IP locale", ph.LocalIP)
+	ph.Speed = speedTest(ctx, cfg.BaseURL, time.Duration(cfg.SpeedSeconds)*time.Second, 4)
+	if ctx.Err() != nil {
+		ph.Verdict, ph.Summary = "interrupted", "test interrompu"
+		return ph
+	}
 	if ph.Speed.Error != "" {
 		ph.Error = ph.Speed.Error
 		ph.Verdict = "fail"
@@ -486,6 +595,7 @@ func runPhase(ctx context.Context, cfg *config, rep *report, name string, c1080,
 func runProfile(ctx context.Context, cfg *config, rep *report, ph *phaseResult, profile string, clip *tsClip, stages []stageConf, during func()) bool {
 	say("")
 	say(cBold+"Démarrage de la diffusion de test (%s, %.1f Mb/s)…"+cReset, profile, clip.bitrate/1e6)
+	liveStep("", fmt.Sprintf("Démarrage de la diffusion de test (%s, %.1f Mb/s)", profile, clip.bitrate/1e6))
 	beeps := &beepLog{}
 	pub := newSRTPublisher(cfg.SRTAddr, cfg.SRTStreamID, time.Duration(cfg.SRTLatencyMs)*time.Millisecond, clip, beeps)
 	if err := pub.start(); err != nil {
@@ -510,6 +620,7 @@ func runProfile(ctx context.Context, cfg *config, rep *report, ph *phaseResult, 
 
 	// Wait for the relay to publish the interpretation feed.
 	say("Attente du flux de traduction…")
+	liveStep("", "Attente du flux de traduction sur le relais")
 	deadline := time.Now().Add(60 * time.Second)
 	for p.open() == 0 && time.Now().Before(deadline) && ctx.Err() == nil {
 		p.grow(ctx, 1, 1)
@@ -539,7 +650,27 @@ func runProfile(ctx context.Context, cfg *config, rep *report, ph *phaseResult, 
 		}
 		say("")
 		say(cBold+"Palier %d/%d : diffusion + %d auditeurs simulés (%d s)"+cReset, i+1, len(stages), st.Listeners, st.Seconds)
+		liveStep("", fmt.Sprintf("Palier %d/%d (%s) : connexion de %d auditeurs", i+1, len(stages), profile, st.Listeners))
+		growDone := make(chan struct{})
+		go func() { // live progress of the ramp-up
+			fb, db := p.counters()
+			for {
+				f, d := p.counters()
+				ss := summarizeSRT(pub.window(pub.elapsed()-5, 1e9))
+				liveFields("Auditeurs connectés", fmt.Sprintf("%d / %d", p.open(), st.Listeners),
+					"En cours de connexion", fmt.Sprint(p.pending.Load()),
+					"Échecs de connexion", fmt.Sprint(f-fb), "Déconnexions", fmt.Sprint(d-db),
+					"Envoi vidéo", fmt.Sprintf("%.1f Mb/s", ss.AvgMbps))
+				select {
+				case <-growDone:
+					return
+				case <-time.After(time.Second):
+				}
+			}
+		}()
 		p.grow(ctx, st.Listeners, cfg.ConnectRate)
+		close(growDone)
+		liveStep("", fmt.Sprintf("Palier %d/%d (%s) : mesure avec %d auditeurs pendant %d s", i+1, len(stages), profile, st.Listeners, st.Seconds))
 		f0, d0 := p.counters()
 		snap := p.snap()
 		t0 := pub.elapsed()
@@ -552,16 +683,35 @@ func runProfile(ctx context.Context, cfg *config, rep *report, ph *phaseResult, 
 			if p.open()+int(p.pending.Load()) < st.Listeners {
 				go p.grow(ctx, st.Listeners, cfg.ConnectRate)
 			}
+			f, d := p.counters()
+			ls := p.stats(snap, time.Since(start).Seconds(), st.Listeners, f-f0, d-d0)
+			ss := summarizeSRT(pub.window(pub.elapsed()-5, 1e9))
+			left := int(time.Until(end).Seconds())
+			lat, lat95 := "-", "-"
+			if ls.LatencyN > 0 {
+				lat = fmt.Sprintf("%.0f ms", ls.LatencyP50ms)
+				lat95 = fmt.Sprintf("%.0f ms", ls.LatencyP95ms)
+			}
+			srtState := "connectée"
+			if ss.ConnectedPct < 100 {
+				srtState = "COUPÉE"
+			}
+			liveFields("Temps restant", fmt.Sprintf("%d s", max(left, 0)),
+				"Diffusion (SRT)", srtState,
+				"Envoi vidéo (5 dernières s)", fmt.Sprintf("%.2f Mb/s", ss.AvgMbps),
+				"Aller-retour (RTT)", fmt.Sprintf("%.0f ms", ss.AvgRTTms),
+				"Paquets vidéo renvoyés", fmt.Sprintf("%.1f %%", ss.RetransPct),
+				"Paquets vidéo perdus (palier)", fmt.Sprint(summarizeSRT(pub.window(t0, 1e9)).Dropped),
+				"Reconnexions SRT (palier)", fmt.Sprint(summarizeSRT(pub.window(t0, 1e9)).Reconnects),
+				"Auditeurs connectés", fmt.Sprintf("%d / %d", ls.Open, st.Listeners),
+				"En cours de connexion", fmt.Sprint(p.pending.Load()),
+				"Échecs / déconnexions", fmt.Sprintf("%d / %d", ls.ConnFailures, ls.Dropped),
+				"Auditeurs sans son", fmt.Sprint(ls.Silent),
+				"Pertes audio (palier)", fmt.Sprintf("%.2f %% (pire %.1f %%)", ls.LossPct, ls.WorstLossPct),
+				"Délai traduction médian / p95", lat+" / "+lat95,
+				"Réception audio totale", fmt.Sprintf("%.1f Mb/s", ls.DownMbps))
 			if time.Since(lastPrint) >= 5*time.Second {
 				lastPrint = time.Now()
-				f, d := p.counters()
-				ls := p.stats(snap, time.Since(start).Seconds(), st.Listeners, f-f0, d-d0)
-				ss := summarizeSRT(pub.window(pub.elapsed()-5, 1e9))
-				left := int(time.Until(end).Seconds())
-				lat := "-"
-				if ls.LatencyN > 0 {
-					lat = fmt.Sprintf("%.0f ms", ls.LatencyP50ms)
-				}
 				conn := "connecté"
 				if ss.ConnectedPct < 100 {
 					conn = cRed + "coupé" + cReset
@@ -575,6 +725,9 @@ func runProfile(ctx context.Context, cfg *config, rep *report, ph *phaseResult, 
 			Listeners: p.stats(snap, time.Since(start).Seconds(), st.Listeners, f-f0, d-d0),
 			SRT:       summarizeSRT(pub.window(t0, 1e9))}
 		sr.Verdict, sr.Problems, sr.LoadFail = stageVerdict(sr)
+		if ctx.Err() != nil { // cut short by Ctrl-C: not judged
+			sr.Verdict, sr.Problems, sr.LoadFail = "interrupted", nil, false
+		}
 		p.mu.Lock()
 		ph.ConnErrors = append(ph.ConnErrors, p.connErrs...)
 		p.connErrs = nil
@@ -612,6 +765,7 @@ func runProfile(ctx context.Context, cfg *config, rep *report, ph *phaseResult, 
 // stream (noise with a silence every 2 s on the interpreter track) is still running.
 func phoneCheck(ctx context.Context, cfg *config, rep *report) {
 	title("Test du téléphone (environ 3 minutes)")
+	liveStep("", "Test du téléphone (la diffusion de test continue)")
 	say("La diffusion de test continue. Le son de la traduction est remplacé par un")
 	say("souffle (comme un bruit de pluie) qui se coupe brièvement toutes les 2 secondes.")
 	say("Nous allons vérifier qu'on l'entend sur le téléphone.")
@@ -646,6 +800,7 @@ func phoneCheck(ctx context.Context, cfg *config, rep *report) {
 // venueQuestions records a few facts only someone on site can check.
 func venueQuestions(cfg *config, rep *report) {
 	title("Quelques questions sur la salle")
+	liveStep("questions", "Questions sur la salle")
 	askYN(rep, "Y a-t-il une prise réseau (câble Ethernet) utilisable près de la régie ?")
 	askYN(rep, "Y a-t-il une prise électrique près de la régie ?")
 	askYN(rep, "Faut-il accepter une page de connexion (conditions, e-mail…) pour avoir internet sur le Wi-Fi ?")
@@ -737,6 +892,29 @@ func stageVerdict(s stageResult) (v string, probs []string, loadFail bool) {
 }
 
 func phaseVerdict(ph *phaseResult) (string, string) {
+	interrupted := false
+	var judged []stageResult
+	for _, s := range ph.Stages {
+		if s.Verdict == "interrupted" {
+			interrupted = true
+		} else {
+			judged = append(judged, s)
+		}
+	}
+	if interrupted && len(judged) == 0 {
+		return "interrupted", "test interrompu"
+	}
+	saved := ph.Stages
+	ph.Stages = judged
+	defer func() { ph.Stages = saved }()
+	v, sum := phaseVerdictJudged(ph)
+	if interrupted {
+		sum += " (test interrompu)"
+	}
+	return v, sum
+}
+
+func phaseVerdictJudged(ph *phaseResult) (string, string) {
 	if len(ph.Stages) == 0 {
 		if ph.Error != "" {
 			return "fail", ph.Error
