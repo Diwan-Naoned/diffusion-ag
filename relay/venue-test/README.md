@@ -129,8 +129,13 @@ with zero.
    This uploads both files to the stub (stored in its volume, authenticated
    with `RESULTS_TOKEN`) and prints the download page,
    `https://<APP_HOST>/telecharger?cle=<DOWNLOAD_KEY>`: a page in French with
-   two buttons, one for the instructions (shown as a printable page) and one
-   for the `.exe`, plus the first steps. `DOWNLOAD_KEY` is generated once in
+   buttons for the instructions (shown as a printable page) and for the
+   `.exe`, plus the first steps. A third button offers a password-protected zip
+   (`ZIP_PASSWORD`, default `ag2026`, shown on the page). Browsers and Windows
+   Defender cannot inspect an encrypted zip at download time, so it gets
+   through when the bare `.exe` arrives empty or gets deleted. It uses
+   ZipCrypto because Windows Explorer cannot extract AES zips. Defender can
+   still flag the `.exe` once it is extracted. `DOWNLOAD_KEY` is generated once in
    `relay/.env`, so the link stays the same across rebuilds. Without the key,
    every download URL returns 404, since the `.exe` contains the publish
    password. Re-run the command after any rebuild. The `.exe` is not signed:

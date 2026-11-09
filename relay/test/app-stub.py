@@ -7,8 +7,9 @@
 - /speed/ip, /speed/down?bytes=N, POST /speed/up   throughput test (venue-test tool)
 - POST /results/<id>  store a venue-test report (header X-Results-Token)
 - POST /results/<id>/live  live progress of a running test (same token)
-- POST /telecharger/<test-connexion-AG.exe|CONSIGNES.txt>   upload the venue-test
-                      program / instructions (token + X-Download-Key header)
+- POST /telecharger/<test-connexion-AG.exe|CONSIGNES.txt|test-connexion-AG-protege.zip>
+                      upload the venue-test program / instructions / password-protected
+                      zip (token + X-Download-Key header, X-Zip-Password for the zip)
 - GET /telecharger?cle=<key>  download page (French) with two buttons:
   /telecharger/consignes?cle=<key> (instructions page) and
   /telecharger/test-connexion-AG.exe?cle=<key>; 404 without the key
@@ -33,14 +34,15 @@ RESULTS_DIR = pathlib.Path(os.environ.get("RESULTS_DIR", "/data/results"))
 DOWNLOAD_DIR = pathlib.Path(os.environ.get("DOWNLOAD_DIR", str(RESULTS_DIR.parent / "download")))
 EXE_NAME = "test-connexion-AG.exe"
 GUIDE_NAME = "CONSIGNES.txt"
-UPLOADS = {EXE_NAME, GUIDE_NAME}
+ZIP_NAME = "test-connexion-AG-protege.zip"  # password-protected (ZipCrypto, opens in Windows Explorer)
+UPLOADS = {EXE_NAME, GUIDE_NAME, ZIP_NAME}
 REPORT_ID = re.compile(r"^[0-9A-Za-z-]{1,64}$")
 KEY_RE = re.compile(r"^[0-9A-Za-z]{16,64}$")
 
 PAGE_STYLE = """<meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
 <style>body{font:17px/1.5 system-ui,sans-serif;max-width:680px;margin:24px auto;padding:0 16px;color:#222}
 a.btn{display:block;text-align:center;color:#fff;padding:16px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:19px;margin:12px 0}
-a.prog{background:#1b5e20} a.guide{background:#0d47a1}
+a.prog{background:#1b5e20} a.guide{background:#0d47a1} a.zip{background:#6a1b9a;font-size:17px}
 li{margin:6px 0} .small{color:#666;font-size:14px}
 pre{white-space:pre-wrap;font:16px/1.5 system-ui,sans-serif}
 @media print{.noprint{display:none}}</style>"""
@@ -50,6 +52,7 @@ DOWNLOAD_PAGE = """<!doctype html><html lang=fr>{style}<title>Test de connexion 
 <a class="btn guide" href="/telecharger/consignes?cle={key}">1. Lire les consignes</a>
 <a class="btn prog" href="/telecharger/{exe}?cle={key}">2. Télécharger le programme</a>
 <p class=small>Programme pour ordinateur Windows ({size} Mo), version du {date}.</p>
+{zip_block}
 <h2>Après le téléchargement</h2>
 <ol>
 <li>Si le navigateur indique que le fichier « n'est pas couramment téléchargé » ou est « dangereux » :
@@ -62,6 +65,12 @@ Le programme a été fait spécialement pour ce test.</li>
 Dans la salle, tapez <b>2</b> pour le test complet.</li>
 </ol>
 </html>"""
+
+ZIP_BLOCK = """<a class="btn zip" href="/telecharger/{zip}?cle={key}">3. Si le programme téléchargé semble vide ou disparaît : version ZIP protégée</a>
+<p>Mot de passe du ZIP : <b style="font-size:20px;letter-spacing:1px">{password}</b> <span class=small>({size} Mo)</span><br>
+Ouvrez <b>Téléchargements</b>, faites un clic droit sur <b>{zip}</b>, puis <b>Extraire tout…</b> et <b>Extraire</b>.
+Windows demande le mot de passe : tapez-le. Dans le dossier extrait, double-cliquez sur <b>test-connexion-AG</b>.</p>
+"""
 
 GUIDE_PAGE = """<!doctype html><html lang=fr>{style}<title>Consignes : test de connexion AG</title>
 <p class=noprint><a href="/telecharger?cle={key}">← Retour au téléchargement</a> · Vous pouvez imprimer cette page.</p>
@@ -138,7 +147,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError):
                 pass
             return
-        if path in ("/telecharger", "/telecharger/consignes", "/telecharger/" + EXE_NAME):
+        if path in ("/telecharger", "/telecharger/consignes", "/telecharger/" + EXE_NAME, "/telecharger/" + ZIP_NAME):
             return self._download(path)
         if path == "/results" or path.startswith("/results/"):
             if not self._token_ok((self._query().get("token") or [""])[0]):
@@ -214,6 +223,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     left -= len(b)
             tmp.replace(DOWNLOAD_DIR / name)
             (DOWNLOAD_DIR / "key").write_text(key)
+            if name == ZIP_NAME:
+                (DOWNLOAD_DIR / "zip-password").write_text(self.headers.get("X-Zip-Password") or "")
             (DOWNLOAD_DIR / "test-connexion-AG.zip").unlink(missing_ok=True)  # former format
             self.log_message("download %s updated (%d bytes)", name, (DOWNLOAD_DIR / name).stat().st_size)
             return self._send(200, b"ok")
@@ -259,22 +270,33 @@ class Handler(http.server.BaseHTTPRequestHandler):
         no_store = [("Cache-Control", "no-store")]
         if path == "/telecharger":
             st = exe.stat()
+            zf, pf = DOWNLOAD_DIR / ZIP_NAME, DOWNLOAD_DIR / "zip-password"
+            zip_block = ""
+            if zf.exists() and pf.exists():
+                zip_block = ZIP_BLOCK.format(zip=ZIP_NAME, key=key, password=html.escape(pf.read_text().strip()),
+                                             size=round(zf.stat().st_size / 1e6))
             page = DOWNLOAD_PAGE.format(style=PAGE_STYLE, exe=EXE_NAME, key=key, size=round(st.st_size / 1e6),
-                                        date=time.strftime("%d/%m/%Y", time.gmtime(st.st_mtime)))
+                                        date=time.strftime("%d/%m/%Y", time.gmtime(st.st_mtime)), zip_block=zip_block)
             return self._send(200, page.encode(), "text/html; charset=utf-8", no_store)
         if path == "/telecharger/consignes":
             page = GUIDE_PAGE.format(style=PAGE_STYLE, exe=EXE_NAME, key=key,
                                      text=html.escape(guide.read_text(encoding="utf-8")))
             return self._send(200, page.encode(), "text/html; charset=utf-8", no_store)
+        if path.endswith(ZIP_NAME):
+            exe, ctype, fname = DOWNLOAD_DIR / ZIP_NAME, "application/zip", ZIP_NAME
+            if not exe.exists():
+                return self._send(404, b"not found (app)")
+        else:
+            ctype, fname = "application/vnd.microsoft.portable-executable", EXE_NAME
         self.send_response(200)
-        self.send_header("Content-Type", "application/vnd.microsoft.portable-executable")
+        self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(exe.stat().st_size))
-        self.send_header("Content-Disposition", f'attachment; filename="{EXE_NAME}"')
+        self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         if self.command == "HEAD":
             return
-        self.log_message("download exe by %s", self.headers.get("X-Real-Ip") or self.client_address[0])
+        self.log_message("download %s by %s", fname, self.headers.get("X-Real-Ip") or self.client_address[0])
         with open(exe, "rb") as f:
             try:
                 while b := f.read(1 << 16):

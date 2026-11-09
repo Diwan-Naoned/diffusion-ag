@@ -83,4 +83,9 @@ EN CAS DE PROBLÈME
   l'ordinateur a bien internet (ouvrez un site web), puis relancez-le.
 - Le programme semble bloqué : attendez 2 minutes. S'il ne se passe toujours
   rien, fermez la fenêtre, relancez-le, et prévenez Valentin.
+- Le programme téléchargé semble vide, disparaît, ou ne se lance pas :
+  sur la page de téléchargement, utilisez le bouton 3 (version ZIP protégée).
+  Le mot de passe est affiché sur la page. Faites un clic droit sur le fichier
+  ZIP, « Extraire tout… », tapez le mot de passe, puis lancez le programme
+  depuis le dossier extrait.
 - Vous pouvez relancer le programme autant de fois que nécessaire.

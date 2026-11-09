@@ -7,7 +7,9 @@
 #
 # The executable embeds the SRT publish credentials of the spike stack and the
 # results token: rotate RELAY_PUBLISH_PASS after the venue test (runbook).
-# Env overrides: SRT_HOST (default dokploy.cocaud.dev), ENV_FILE.
+# Env overrides: SRT_HOST (default dokploy.cocaud.dev), ENV_FILE,
+# ZIP_PASSWORD (password of the protected zip, shown on the download page;
+# it only stops browsers/antivirus from inspecting the .exe at download time).
 set -eu
 cd "$(dirname "$0")"
 ENV_FILE=${ENV_FILE:-../.env}
@@ -25,6 +27,7 @@ if [ -z "${DOWNLOAD_KEY:-}" ]; then
   printf '# key of the venue-test download page (/telecharger?cle=...)\nDOWNLOAD_KEY=%s\n' "$DOWNLOAD_KEY" >> "$ENV_FILE"
 fi
 SRT_HOST=${SRT_HOST:-dokploy.cocaud.dev}
+ZIP_PASSWORD=${ZIP_PASSWORD:-ag2026}
 
 [ -f media/test1080.ts ] && [ -f media/test720.ts ] && [ -f media/testcheck.ts ] || ./gen-media.sh
 
@@ -62,13 +65,16 @@ mkdir -p dist/test-connexion-AG
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" \
   -o dist/test-connexion-AG/test-connexion-AG.exe .
 cp CONSIGNES.txt dist/test-connexion-AG/
-rm -f dist/test-connexion-AG.zip
-ls -l dist/test-connexion-AG/
+rm -f dist/test-connexion-AG.zip dist/test-connexion-AG-protege.zip
+# ZipCrypto (zip -P), not AES: Windows Explorer's "Extraire tout" only opens ZipCrypto.
+(cd dist/test-connexion-AG && zip -q -P "$ZIP_PASSWORD" ../test-connexion-AG-protege.zip test-connexion-AG.exe CONSIGNES.txt)
+ls -l dist/test-connexion-AG/ dist/test-connexion-AG-protege.zip
 if [ "${1:-}" = "--upload" ]; then
-  for f in CONSIGNES.txt test-connexion-AG.exe; do
+  for f in test-connexion-AG/CONSIGNES.txt test-connexion-AG/test-connexion-AG.exe test-connexion-AG-protege.zip; do
     curl -fsS -X POST -H "X-Results-Token: ${RESULTS_TOKEN}" -H "X-Download-Key: ${DOWNLOAD_KEY}" \
-      -H "Content-Type: application/octet-stream" --data-binary "@dist/test-connexion-AG/$f" \
-      "https://${APP_HOST}/telecharger/$f" >/dev/null
+      -H "X-Zip-Password: ${ZIP_PASSWORD}" \
+      -H "Content-Type: application/octet-stream" --data-binary "@dist/$f" \
+      "https://${APP_HOST}/telecharger/$(basename "$f")" >/dev/null
   done
   echo "Uploaded. Download page: https://${APP_HOST}/telecharger?cle=${DOWNLOAD_KEY}"
 fi
