@@ -7,9 +7,11 @@
 - /speed/ip, /speed/down?bytes=N, POST /speed/up   throughput test (venue-test tool)
 - POST /results/<id>  store a venue-test report (header X-Results-Token)
 - POST /results/<id>/live  live progress of a running test (same token)
-- POST /telecharger   upload the venue-test zip (token + X-Download-Key header)
-- GET /telecharger?cle=<key>, /telecharger/test-connexion-AG.zip?cle=<key>
-                      download page (French) and the zip; 404 without the key
+- POST /telecharger/<test-connexion-AG.exe|CONSIGNES.txt>   upload the venue-test
+                      program / instructions (token + X-Download-Key header)
+- GET /telecharger?cle=<key>  download page (French) with two buttons:
+  /telecharger/consignes?cle=<key> (instructions page) and
+  /telecharger/test-connexion-AG.exe?cle=<key>; 404 without the key
 - GET /results?token=..., /results/<id>?token=...   view the reports (auto-refresh)
 - anything else       404 (like the real app for unknown /media/* paths)
 """
@@ -29,29 +31,42 @@ COOKIE = "ag_access=ok"
 RESULTS_TOKEN = os.environ.get("RESULTS_TOKEN", "")
 RESULTS_DIR = pathlib.Path(os.environ.get("RESULTS_DIR", "/data/results"))
 DOWNLOAD_DIR = pathlib.Path(os.environ.get("DOWNLOAD_DIR", str(RESULTS_DIR.parent / "download")))
-ZIP_NAME = "test-connexion-AG.zip"
+EXE_NAME = "test-connexion-AG.exe"
+GUIDE_NAME = "CONSIGNES.txt"
+UPLOADS = {EXE_NAME, GUIDE_NAME}
 REPORT_ID = re.compile(r"^[0-9A-Za-z-]{1,64}$")
 KEY_RE = re.compile(r"^[0-9A-Za-z]{16,64}$")
 
-DOWNLOAD_PAGE = """<!doctype html><html lang=fr><meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<title>Test de connexion AG</title>
-<style>body{{font:17px/1.5 system-ui,sans-serif;max-width:640px;margin:24px auto;padding:0 16px;color:#222}}
-a.btn{{display:inline-block;background:#1b5e20;color:#fff;padding:14px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:19px}}
-li{{margin:6px 0}} .small{{color:#666;font-size:14px}}</style>
+PAGE_STYLE = """<meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<style>body{font:17px/1.5 system-ui,sans-serif;max-width:680px;margin:24px auto;padding:0 16px;color:#222}
+a.btn{display:block;text-align:center;color:#fff;padding:16px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:19px;margin:12px 0}
+a.prog{background:#1b5e20} a.guide{background:#0d47a1}
+li{margin:6px 0} .small{color:#666;font-size:14px}
+pre{white-space:pre-wrap;font:16px/1.5 system-ui,sans-serif}
+@media print{.noprint{display:none}}</style>"""
+
+DOWNLOAD_PAGE = """<!doctype html><html lang=fr>{style}<title>Test de connexion AG</title>
 <h1>Test de la connexion pour l'AG</h1>
-<p><a class=btn href="/telecharger/{zip}?cle={key}">Télécharger le programme</a></p>
-<p class=small>Fichier {zip}, {size} Mo, mis à jour le {date}. Pour un ordinateur Windows.</p>
-<h2>Ensuite</h2>
+<a class="btn guide" href="/telecharger/consignes?cle={key}">1. Lire les consignes</a>
+<a class="btn prog" href="/telecharger/{exe}?cle={key}">2. Télécharger le programme</a>
+<p class=small>Programme pour ordinateur Windows ({size} Mo), version du {date}.</p>
+<h2>Après le téléchargement</h2>
 <ol>
-<li>Ouvrez le dossier <b>Téléchargements</b>, faites un clic droit sur <b>{zip}</b>, puis <b>Extraire tout…</b> et <b>Extraire</b>.</li>
-<li>Dans le dossier extrait, double-cliquez sur <b>test-connexion-AG</b>.</li>
-<li>Si un écran bleu « Windows a protégé votre ordinateur » apparaît : cliquez sur <b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>.</li>
-<li>Tapez <b>1</b> puis Entrée pour la <b>vérification rapide</b> à la maison (environ 1 minute, très peu de connexion).<br>
+<li>Si le navigateur indique que le fichier « n'est pas couramment téléchargé » ou est « dangereux » :
+choisissez de le <b>conserver</b> (dans Edge : « … » puis <b>Conserver</b>, puis <b>Conserver quand même</b>).
+Le programme a été fait spécialement pour ce test.</li>
+<li>Ouvrez le dossier <b>Téléchargements</b> et double-cliquez sur <b>test-connexion-AG</b>.</li>
+<li>Si un écran bleu « Windows a protégé votre ordinateur » apparaît : cliquez sur
+<b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>.</li>
+<li>Tapez <b>1</b> puis Entrée pour la <b>vérification rapide</b> à la maison (environ 1 minute, très peu de connexion).
 Dans la salle, tapez <b>2</b> pour le test complet.</li>
 </ol>
-<p>Les consignes complètes sont dans le fichier <b>CONSIGNES.txt</b> du dossier extrait.</p>
-<p class=small>Si le navigateur indique que le fichier est « peu courant » ou « dangereux », choisissez de le conserver : le programme a été fait spécialement pour ce test.</p>
+</html>"""
+
+GUIDE_PAGE = """<!doctype html><html lang=fr>{style}<title>Consignes : test de connexion AG</title>
+<p class=noprint><a href="/telecharger?cle={key}">← Retour au téléchargement</a> · Vous pouvez imprimer cette page.</p>
+<pre>{text}</pre>
+<p class=noprint><a class="btn prog" href="/telecharger/{exe}?cle={key}">Télécharger le programme</a></p>
 </html>"""
 CHUNK = os.urandom(64 * 1024)
 
@@ -123,7 +138,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError):
                 pass
             return
-        if path in ("/telecharger", "/telecharger/" + ZIP_NAME):
+        if path in ("/telecharger", "/telecharger/consignes", "/telecharger/" + EXE_NAME):
             return self._download(path)
         if path == "/results" or path.startswith("/results/"):
             if not self._token_ok((self._query().get("token") or [""])[0]):
@@ -178,7 +193,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.close_connection = True
                 return
             return self._send(200, str(n).encode())
-        if path == "/telecharger":
+        if path.startswith("/telecharger/") and path[len("/telecharger/"):] in UPLOADS:
+            name = path[len("/telecharger/"):]
             if not self._token_ok(self.headers.get("X-Results-Token")):
                 return self._send(403, b"forbidden")
             key = self.headers.get("X-Download-Key") or ""
@@ -188,7 +204,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if not 0 < left <= 200_000_000:
                 return self._send(400, b"bad size")
             DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
-            tmp = DOWNLOAD_DIR / (ZIP_NAME + ".part")
+            tmp = DOWNLOAD_DIR / (name + ".part")
             with open(tmp, "wb") as out:
                 while left > 0:
                     b = self.rfile.read(min(left, 1 << 16))
@@ -196,9 +212,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         return self._send(400, b"truncated")
                     out.write(b)
                     left -= len(b)
-            tmp.replace(DOWNLOAD_DIR / ZIP_NAME)
+            tmp.replace(DOWNLOAD_DIR / name)
             (DOWNLOAD_DIR / "key").write_text(key)
-            self.log_message("download zip updated (%d bytes)", (DOWNLOAD_DIR / ZIP_NAME).stat().st_size)
+            (DOWNLOAD_DIR / "test-connexion-AG.zip").unlink(missing_ok=True)  # former format
+            self.log_message("download %s updated (%d bytes)", name, (DOWNLOAD_DIR / name).stat().st_size)
             return self._send(200, b"ok")
         if path.startswith("/results/") and path.endswith("/live"):
             rid = path[len("/results/"):-len("/live")]
@@ -233,25 +250,32 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return self._not_found()
 
     def _download(self, path):
-        zf, kf = DOWNLOAD_DIR / ZIP_NAME, DOWNLOAD_DIR / "key"
+        exe, guide, kf = DOWNLOAD_DIR / EXE_NAME, DOWNLOAD_DIR / GUIDE_NAME, DOWNLOAD_DIR / "key"
         given = (self._query().get("cle") or [""])[0]
-        if not (zf.exists() and kf.exists() and given and hmac.compare_digest(given, kf.read_text().strip())):
+        if not (exe.exists() and guide.exists() and kf.exists() and given
+                and hmac.compare_digest(given, kf.read_text().strip())):
             return self._send(404, b"not found (app)")
+        key = urllib.parse.quote(given)
+        no_store = [("Cache-Control", "no-store")]
         if path == "/telecharger":
-            st = zf.stat()
-            page = DOWNLOAD_PAGE.format(zip=ZIP_NAME, key=urllib.parse.quote(given), size=round(st.st_size / 1e6),
-                                        date=time.strftime("%d/%m/%Y à %H:%M", time.localtime(st.st_mtime)))
-            return self._send(200, page.encode(), "text/html; charset=utf-8", [("Cache-Control", "no-store")])
+            st = exe.stat()
+            page = DOWNLOAD_PAGE.format(style=PAGE_STYLE, exe=EXE_NAME, key=key, size=round(st.st_size / 1e6),
+                                        date=time.strftime("%d/%m/%Y", time.gmtime(st.st_mtime)))
+            return self._send(200, page.encode(), "text/html; charset=utf-8", no_store)
+        if path == "/telecharger/consignes":
+            page = GUIDE_PAGE.format(style=PAGE_STYLE, exe=EXE_NAME, key=key,
+                                     text=html.escape(guide.read_text(encoding="utf-8")))
+            return self._send(200, page.encode(), "text/html; charset=utf-8", no_store)
         self.send_response(200)
-        self.send_header("Content-Type", "application/zip")
-        self.send_header("Content-Length", str(zf.stat().st_size))
-        self.send_header("Content-Disposition", f'attachment; filename="{ZIP_NAME}"')
+        self.send_header("Content-Type", "application/vnd.microsoft.portable-executable")
+        self.send_header("Content-Length", str(exe.stat().st_size))
+        self.send_header("Content-Disposition", f'attachment; filename="{EXE_NAME}"')
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         if self.command == "HEAD":
             return
-        self.log_message("download zip by %s", self.headers.get("X-Real-Ip") or self.client_address[0])
-        with open(zf, "rb") as f:
+        self.log_message("download exe by %s", self.headers.get("X-Real-Ip") or self.client_address[0])
+        with open(exe, "rb") as f:
             try:
                 while b := f.read(1 << 16):
                     self.wfile.write(b)

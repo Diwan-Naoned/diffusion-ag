@@ -5,7 +5,7 @@ venue. It checks, on the venue Wi-Fi and then on a 4G/5G phone hotspot, that
 the network carries the AG stream and the interpretation feed at scale. Results
 are uploaded to the spike stub on the VPS, so they can be followed remotely.
 Instructions for the person on site (in French) are in [`CONSIGNES.txt`](CONSIGNES.txt)
-and are shipped in the zip.
+and are offered next to the program on the download page.
 
 At startup it asks for a mode: **1, fast check** (at home) or **2, full test**
 (at the venue). `-check` skips the menu.
@@ -109,7 +109,7 @@ with zero.
    (gitignored) with the SRT publish credentials, the stub host and the
    results token. On the first run it adds `RESULTS_TOKEN` to `relay/.env`.
    It then generates the test clips if missing (`gen-media.sh`, needs ffmpeg
-   with libx264), and writes `dist/test-connexion-AG.zip` (the `.exe` plus
+   with libx264), and writes `dist/test-connexion-AG/` (the `.exe` and
    `CONSIGNES.txt`). It prints the results URL.
 3. Put `RESULTS_TOKEN` in Dokploy's environment for `ag-relay` and redeploy.
 4. Dry run from your Mac against the VPS. `config.json` is embedded, so this
@@ -120,18 +120,19 @@ with zero.
    go run . -only wifi                           # full Wi-Fi phase only
    ```
 
-5. Publish the zip on the stub and send her the link:
+5. Publish the program and the instructions on the stub and send her the link:
 
    ```sh
    relay/venue-test/build.sh --upload
    ```
 
-   This uploads the zip to the stub (stored in its volume, authenticated with
-   `RESULTS_TOKEN`) and prints the download page,
+   This uploads both files to the stub (stored in its volume, authenticated
+   with `RESULTS_TOKEN`) and prints the download page,
    `https://<APP_HOST>/telecharger?cle=<DOWNLOAD_KEY>`: a page in French with
-   a download button and the first steps. `DOWNLOAD_KEY` is generated once in
+   two buttons, one for the instructions (shown as a printable page) and one
+   for the `.exe`, plus the first steps. `DOWNLOAD_KEY` is generated once in
    `relay/.env`, so the link stays the same across rebuilds. Without the key,
-   the page and the zip return 404, since the zip contains the publish
+   every download URL returns 404, since the `.exe` contains the publish
    password. Re-run the command after any rebuild. The `.exe` is not signed:
    SmartScreen shows "Windows a protégé votre ordinateur", then "Informations
    complémentaires" → "Exécuter quand même" (covered in `CONSIGNES.txt`).

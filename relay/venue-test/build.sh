@@ -1,8 +1,8 @@
 #!/bin/sh
 # Build the Windows venue test tool from the spike environment (relay/.env).
 #
-#   relay/venue-test/build.sh            -> dist/test-connexion-AG.zip
-#   relay/venue-test/build.sh --upload   same, then upload it to the stub's
+#   relay/venue-test/build.sh            -> dist/test-connexion-AG/{test-connexion-AG.exe,CONSIGNES.txt}
+#   relay/venue-test/build.sh --upload   same, then upload both to the stub's
 #                                        download page (/telecharger?cle=…)
 #
 # The executable embeds the SRT publish credentials of the spike stack and the
@@ -62,12 +62,14 @@ mkdir -p dist/test-connexion-AG
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" \
   -o dist/test-connexion-AG/test-connexion-AG.exe .
 cp CONSIGNES.txt dist/test-connexion-AG/
-(cd dist && rm -f test-connexion-AG.zip && zip -qr test-connexion-AG.zip test-connexion-AG)
-ls -l dist/test-connexion-AG.zip
+rm -f dist/test-connexion-AG.zip
+ls -l dist/test-connexion-AG/
 if [ "${1:-}" = "--upload" ]; then
-  curl -fsS -X POST -H "X-Results-Token: ${RESULTS_TOKEN}" -H "X-Download-Key: ${DOWNLOAD_KEY}" \
-    -H "Content-Type: application/zip" --data-binary @dist/test-connexion-AG.zip \
-    "https://${APP_HOST}/telecharger" >/dev/null
+  for f in CONSIGNES.txt test-connexion-AG.exe; do
+    curl -fsS -X POST -H "X-Results-Token: ${RESULTS_TOKEN}" -H "X-Download-Key: ${DOWNLOAD_KEY}" \
+      -H "Content-Type: application/octet-stream" --data-binary "@dist/test-connexion-AG/$f" \
+      "https://${APP_HOST}/telecharger/$f" >/dev/null
+  done
   echo "Uploaded. Download page: https://${APP_HOST}/telecharger?cle=${DOWNLOAD_KEY}"
 fi
 echo "Results: https://${APP_HOST}/results?token=${RESULTS_TOKEN}"

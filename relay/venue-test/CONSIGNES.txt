@@ -19,10 +19,12 @@ Durée : environ 30 minutes sur place.
 
 AVANT D'Y ALLER (à la maison)
 -----------------------------
-1. Faites un clic droit sur le fichier « test-connexion-AG.zip »,
-   puis « Extraire tout… », puis « Extraire ».
-   (Ne lancez pas le programme directement depuis le fichier .zip.)
-2. Dans le dossier extrait, double-cliquez sur « test-connexion-AG ».
+1. Sur la page de téléchargement, cliquez sur « Télécharger le programme ».
+   Si le navigateur indique que le fichier « n'est pas couramment téléchargé »
+   ou est « dangereux », choisissez de le conserver (dans Edge : « … » puis
+   « Conserver », puis « Conserver quand même »).
+2. Ouvrez le dossier « Téléchargements » et double-cliquez sur
+   « test-connexion-AG ».
 3. Si un écran bleu « Windows a protégé votre ordinateur » apparaît :
    cliquez sur « Informations complémentaires », puis « Exécuter quand même ».
    C'est normal : le programme a été fait spécialement pour ce test.
