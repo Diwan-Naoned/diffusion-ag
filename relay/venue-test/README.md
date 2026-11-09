@@ -120,14 +120,34 @@ with zero.
    go run . -only wifi                           # full Wi-Fi phase only
    ```
 
-5. Send the zip (Google Drive, WeTransfer…). The `.exe` is not signed:
+5. Publish the zip on the stub and send her the link:
+
+   ```sh
+   relay/venue-test/build.sh --upload
+   ```
+
+   This uploads the zip to the stub (stored in its volume, authenticated with
+   `RESULTS_TOKEN`) and prints the download page,
+   `https://<APP_HOST>/telecharger?cle=<DOWNLOAD_KEY>`: a page in French with
+   a download button and the first steps. `DOWNLOAD_KEY` is generated once in
+   `relay/.env`, so the link stays the same across rebuilds. Without the key,
+   the page and the zip return 404, since the zip contains the publish
+   password. Re-run the command after any rebuild. The `.exe` is not signed:
    SmartScreen shows "Windows a protégé votre ordinateur", then "Informations
    complémentaires" → "Exécuter quand même" (covered in `CONSIGNES.txt`).
    Ask the person to run the fast check (mode 1) at home: it gets past that
    screen and the firewall prompt, and its report shows up in the results.
 
-Results: `https://<APP_HOST>/results?token=<RESULTS_TOKEN>`. The report is
-uploaded after every stage and the page auto-refreshes while the test runs.
+Results: `https://<APP_HOST>/results?token=<RESULTS_TOKEN>`. The full report
+is uploaded at launch and after every step. A **live box** at the top of the
+report page shows what is happening on her screen: the current step, the
+question waiting for her answer, and fields that depend on the step (time
+left, SRT send rate, RTT, retransmissions, listeners connected or connecting,
+audio loss, translation delay…). The tool posts it every 5 s, and right away
+when the step or the question changes. It is about 1 KB per post, so roughly
+1.5 kb/s. The page refreshes every 5 s, and the box turns grey when no update
+has arrived for 20 s (laptop closed, network down, or switching to the
+hotspot).
 A copy (`.json` + `.txt`) is saved next to the `.exe` and on the Desktop.
 
 **After the test**: rotate `RELAY_PUBLISH_PASS`, since it is embedded in the

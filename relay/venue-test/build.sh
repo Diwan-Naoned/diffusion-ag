@@ -2,6 +2,8 @@
 # Build the Windows venue test tool from the spike environment (relay/.env).
 #
 #   relay/venue-test/build.sh            -> dist/test-connexion-AG.zip
+#   relay/venue-test/build.sh --upload   same, then upload it to the stub's
+#                                        download page (/telecharger?cle=…)
 #
 # The executable embeds the SRT publish credentials of the spike stack and the
 # results token: rotate RELAY_PUBLISH_PASS after the venue test (runbook).
@@ -17,6 +19,10 @@ if [ -z "${RESULTS_TOKEN:-}" ]; then
   RESULTS_TOKEN=$(openssl rand -hex 16)
   printf '\n# venue-test reports (stub /results), also set in Dokploy\nRESULTS_TOKEN=%s\n' "$RESULTS_TOKEN" >> "$ENV_FILE"
   echo "Added RESULTS_TOKEN to $ENV_FILE: copy it into the Dokploy environment and redeploy." >&2
+fi
+if [ -z "${DOWNLOAD_KEY:-}" ]; then
+  DOWNLOAD_KEY=$(openssl rand -hex 12)
+  printf '# key of the venue-test download page (/telecharger?cle=...)\nDOWNLOAD_KEY=%s\n' "$DOWNLOAD_KEY" >> "$ENV_FILE"
 fi
 SRT_HOST=${SRT_HOST:-dokploy.cocaud.dev}
 
@@ -58,4 +64,10 @@ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" \
 cp CONSIGNES.txt dist/test-connexion-AG/
 (cd dist && rm -f test-connexion-AG.zip && zip -qr test-connexion-AG.zip test-connexion-AG)
 ls -l dist/test-connexion-AG.zip
+if [ "${1:-}" = "--upload" ]; then
+  curl -fsS -X POST -H "X-Results-Token: ${RESULTS_TOKEN}" -H "X-Download-Key: ${DOWNLOAD_KEY}" \
+    -H "Content-Type: application/zip" --data-binary @dist/test-connexion-AG.zip \
+    "https://${APP_HOST}/telecharger" >/dev/null
+  echo "Uploaded. Download page: https://${APP_HOST}/telecharger?cle=${DOWNLOAD_KEY}"
+fi
 echo "Results: https://${APP_HOST}/results?token=${RESULTS_TOKEN}"

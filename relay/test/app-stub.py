@@ -6,23 +6,53 @@
 - GET /reader.js      MediaMTX reader (copied from MediaMTX v1.21.3, MIT)
 - /speed/ip, /speed/down?bytes=N, POST /speed/up   throughput test (venue-test tool)
 - POST /results/<id>  store a venue-test report (header X-Results-Token)
+- POST /results/<id>/live  live progress of a running test (same token)
+- POST /telecharger   upload the venue-test zip (token + X-Download-Key header)
+- GET /telecharger?cle=<key>, /telecharger/test-connexion-AG.zip?cle=<key>
+                      download page (French) and the zip; 404 without the key
 - GET /results?token=..., /results/<id>?token=...   view the reports (auto-refresh)
 - anything else       404 (like the real app for unknown /media/* paths)
 """
 
+import hmac
 import html
 import http.server
 import json
 import os
 import pathlib
 import re
+import time
 import urllib.parse
 
 HERE = pathlib.Path(__file__).parent
 COOKIE = "ag_access=ok"
 RESULTS_TOKEN = os.environ.get("RESULTS_TOKEN", "")
 RESULTS_DIR = pathlib.Path(os.environ.get("RESULTS_DIR", "/data/results"))
+DOWNLOAD_DIR = pathlib.Path(os.environ.get("DOWNLOAD_DIR", str(RESULTS_DIR.parent / "download")))
+ZIP_NAME = "test-connexion-AG.zip"
 REPORT_ID = re.compile(r"^[0-9A-Za-z-]{1,64}$")
+KEY_RE = re.compile(r"^[0-9A-Za-z]{16,64}$")
+
+DOWNLOAD_PAGE = """<!doctype html><html lang=fr><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Test de connexion AG</title>
+<style>body{{font:17px/1.5 system-ui,sans-serif;max-width:640px;margin:24px auto;padding:0 16px;color:#222}}
+a.btn{{display:inline-block;background:#1b5e20;color:#fff;padding:14px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:19px}}
+li{{margin:6px 0}} .small{{color:#666;font-size:14px}}</style>
+<h1>Test de la connexion pour l'AG</h1>
+<p><a class=btn href="/telecharger/{zip}?cle={key}">Télécharger le programme</a></p>
+<p class=small>Fichier {zip}, {size} Mo, mis à jour le {date}. Pour un ordinateur Windows.</p>
+<h2>Ensuite</h2>
+<ol>
+<li>Ouvrez le dossier <b>Téléchargements</b>, faites un clic droit sur <b>{zip}</b>, puis <b>Extraire tout…</b> et <b>Extraire</b>.</li>
+<li>Dans le dossier extrait, double-cliquez sur <b>test-connexion-AG</b>.</li>
+<li>Si un écran bleu « Windows a protégé votre ordinateur » apparaît : cliquez sur <b>Informations complémentaires</b>, puis <b>Exécuter quand même</b>.</li>
+<li>Tapez <b>1</b> puis Entrée pour la <b>vérification rapide</b> à la maison (environ 1 minute, très peu de connexion).<br>
+Dans la salle, tapez <b>2</b> pour le test complet.</li>
+</ol>
+<p>Les consignes complètes sont dans le fichier <b>CONSIGNES.txt</b> du dossier extrait.</p>
+<p class=small>Si le navigateur indique que le fichier est « peu courant » ou « dangereux », choisissez de le conserver : le programme a été fait spécialement pour ce test.</p>
+</html>"""
 CHUNK = os.urandom(64 * 1024)
 
 PAGE = b"""<!doctype html>
@@ -71,7 +101,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
 
     def _token_ok(self, given):
-        return bool(RESULTS_TOKEN) and given == RESULTS_TOKEN
+        return bool(RESULTS_TOKEN) and bool(given) and hmac.compare_digest(given, RESULTS_TOKEN)
 
     def do_GET(self):
         path = self.path.split("?")[0]
@@ -93,6 +123,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError):
                 pass
             return
+        if path in ("/telecharger", "/telecharger/" + ZIP_NAME):
+            return self._download(path)
         if path == "/results" or path.startswith("/results/"):
             if not self._token_ok((self._query().get("token") or [""])[0]):
                 return self._send(403, b"forbidden")
@@ -146,6 +178,42 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.close_connection = True
                 return
             return self._send(200, str(n).encode())
+        if path == "/telecharger":
+            if not self._token_ok(self.headers.get("X-Results-Token")):
+                return self._send(403, b"forbidden")
+            key = self.headers.get("X-Download-Key") or ""
+            if not KEY_RE.match(key):
+                return self._send(400, b"bad key")
+            left = int(self.headers.get("Content-Length") or 0)
+            if not 0 < left <= 200_000_000:
+                return self._send(400, b"bad size")
+            DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            tmp = DOWNLOAD_DIR / (ZIP_NAME + ".part")
+            with open(tmp, "wb") as out:
+                while left > 0:
+                    b = self.rfile.read(min(left, 1 << 16))
+                    if not b:
+                        return self._send(400, b"truncated")
+                    out.write(b)
+                    left -= len(b)
+            tmp.replace(DOWNLOAD_DIR / ZIP_NAME)
+            (DOWNLOAD_DIR / "key").write_text(key)
+            self.log_message("download zip updated (%d bytes)", (DOWNLOAD_DIR / ZIP_NAME).stat().st_size)
+            return self._send(200, b"ok")
+        if path.startswith("/results/") and path.endswith("/live"):
+            rid = path[len("/results/"):-len("/live")]
+            if not self._token_ok(self.headers.get("X-Results-Token")):
+                return self._send(403, b"forbidden")
+            if not REPORT_ID.match(rid):
+                return self._send(400, b"bad id")
+            body = self.rfile.read(min(int(self.headers.get("Content-Length") or 0), 100_000))
+            try:
+                json.loads(body)
+            except ValueError:
+                return self._send(400, b"bad json")
+            RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+            (RESULTS_DIR / f"{rid}.live").write_bytes(body)
+            return self._send(200, b"ok")
         if path.startswith("/results/"):
             rid = path[len("/results/"):]
             if not self._token_ok(self.headers.get("X-Results-Token")):
@@ -164,6 +232,32 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, b"ok")
         return self._not_found()
 
+    def _download(self, path):
+        zf, kf = DOWNLOAD_DIR / ZIP_NAME, DOWNLOAD_DIR / "key"
+        given = (self._query().get("cle") or [""])[0]
+        if not (zf.exists() and kf.exists() and given and hmac.compare_digest(given, kf.read_text().strip())):
+            return self._send(404, b"not found (app)")
+        if path == "/telecharger":
+            st = zf.stat()
+            page = DOWNLOAD_PAGE.format(zip=ZIP_NAME, key=urllib.parse.quote(given), size=round(st.st_size / 1e6),
+                                        date=time.strftime("%d/%m/%Y à %H:%M", time.localtime(st.st_mtime)))
+            return self._send(200, page.encode(), "text/html; charset=utf-8", [("Cache-Control", "no-store")])
+        self.send_response(200)
+        self.send_header("Content-Type", "application/zip")
+        self.send_header("Content-Length", str(zf.stat().st_size))
+        self.send_header("Content-Disposition", f'attachment; filename="{ZIP_NAME}"')
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if self.command == "HEAD":
+            return
+        self.log_message("download zip by %s", self.headers.get("X-Real-Ip") or self.client_address[0])
+        with open(zf, "rb") as f:
+            try:
+                while b := f.read(1 << 16):
+                    self.wfile.write(b)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+
     def _results_page(self, rid):
         token = urllib.parse.quote(RESULTS_TOKEN)
         if rid.endswith(".json") and REPORT_ID.match(rid[:-5]):
@@ -171,12 +265,30 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self._send(200, f.read_bytes(), "application/json") if f.exists() else self._send(404, b"not found")
         if not rid:
             files = sorted(RESULTS_DIR.glob("*.json"), reverse=True) if RESULTS_DIR.exists() else []
-            rows = "".join(f'<li><a href="/results/{f.stem}?token={token}">{f.stem}</a></li>' for f in files)
-            return self._send(200, f"<!doctype html><meta charset=utf-8><title>Venue tests</title><h1>Venue tests</h1><ul>{rows or '<li>none yet</li>'}</ul>".encode(), "text/html; charset=utf-8")
+            def item(f):
+                lf = f.with_suffix(".live")
+                extra = ""
+                if lf.exists():
+                    age = time.time() - lf.stat().st_mtime
+                    try:
+                        step = json.loads(lf.read_bytes()).get("step", "")
+                    except ValueError:
+                        step = ""
+                    extra = f" — {'🟢' if age < 20 else '⚪'} {html.escape(step)} ({fmt_age(age)})"
+                return f'<li><a href="/results/{f.stem}?token={token}">{f.stem}</a>{extra}</li>'
+            rows = "".join(item(f) for f in files)
+            return self._send(200, f"<!doctype html><meta charset=utf-8><meta http-equiv=refresh content=10><title>Venue tests</title><h1>Venue tests</h1><ul>{rows or '<li>none yet</li>'}</ul>".encode(), "text/html; charset=utf-8")
         f = RESULTS_DIR / f"{rid}.json"
         if not REPORT_ID.match(rid) or not f.exists():
             return self._send(404, b"not found")
-        return self._send(200, render_report(json.loads(f.read_bytes()), rid, token).encode(), "text/html; charset=utf-8")
+        lf = RESULTS_DIR / f"{rid}.live"
+        live = None
+        if lf.exists():
+            try:
+                live = (json.loads(lf.read_bytes()), time.time() - lf.stat().st_mtime)
+            except ValueError:
+                pass
+        return self._send(200, render_report(json.loads(f.read_bytes()), rid, token, live).encode(), "text/html; charset=utf-8")
 
     def _not_found(self):
         self._send(404, b"not found (app)")
@@ -184,17 +296,44 @@ class Handler(http.server.BaseHTTPRequestHandler):
     do_PATCH = do_DELETE = do_OPTIONS = do_PUT = _not_found
 
 
-def render_report(r, rid, token):
+def fmt_age(sec):
+    sec = int(sec)
+    if sec < 60:
+        return f"{sec} s ago"
+    if sec < 3600:
+        return f"{sec // 60} min ago"
+    return f"{sec // 3600} h ago"
+
+
+def render_live(live):
+    d, age = live
+    e = lambda v: html.escape(str(v))
+    fresh = age < 20
+    out = [f"<div class=live style='border:2px solid {'#2a2' if fresh else '#aaa'};padding:8px 12px;margin:8px 0;max-width:720px'>"
+           f"<b>{'🟢 LIVE' if fresh else '⚪ no update for ' + fmt_age(age).replace(' ago', '')}</b> — "
+           f"phase <b>{e(d.get('phase') or '-')}</b>, last update {fmt_age(age)}"
+           f"<h2 style='margin:6px 0'>{e(d.get('step'))}</h2>"]
+    if d.get("prompt"):
+        out.append(f"<p style='background:#fff3c4;padding:4px 6px'>⌨ waiting for her answer: <i>{e(d['prompt'])}</i></p>")
+    if d.get("fields"):
+        out.append("<table>" + "".join(f"<tr><th style='text-align:left'>{e(k)}</th><td>{e(v)}</td></tr>" for k, v in d["fields"]) + "</table>")
+    out.append("</div>")
+    return "".join(out)
+
+
+def render_report(r, rid, token, live=None):
     e = lambda v: html.escape(str(v))
     out = [f"<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'>"
            f"<title>Venue test {e(rid)}</title>"
            "<style>body{font:14px system-ui;margin:16px}table{border-collapse:collapse;margin:8px 0}"
            "td,th{border:1px solid #ccc;padding:3px 6px;text-align:right}th{background:#eee}"
            ".ok{background:#d4f7d4}.warn{background:#fff3c4}.fail{background:#ffd6d6}pre{background:#f6f6f6;padding:8px;overflow:auto}</style>"]
-    if r.get("status") == "running":
-        out.append("<meta http-equiv=refresh content=10>")
+    if r.get("status") == "running" or (live and live[1] < 60):
+        out.append("<meta http-equiv=refresh content=5>")
     out.append(f"<h1>Venue test {e(rid)}</h1><p>status <b>{e(r.get('status'))}</b>, updated {e(r.get('updated'))}, {e(r.get('os'))}, "
                f"<a href='/results/{e(rid)}.json?token={token}'>JSON</a></p>")
+    if live:
+        out.append(render_live(live))
     for n in r.get("notes") or []:
         out.append(f"<p>note: {e(n)}</p>")
     for ph in r.get("phases") or []:
