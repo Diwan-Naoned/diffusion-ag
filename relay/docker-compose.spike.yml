@@ -11,6 +11,7 @@
 #   YOUTUBE_URL_A=rtmp://ag-sink-a:1935/live
 #   YOUTUBE_URL_B=rtmp://ag-sink-b:1935/live
 #   RELAY_AUTH_URL=http://ag-auth-stub:8000/auth/media
+#   RESULTS_TOKEN=<openssl rand -hex 16>   (venue-test reports, see venue-test/README.md)
 # Switch the compose path to ./relay/docker-compose.yml for production.
 
 include:
@@ -28,6 +29,12 @@ services:
         COPY app-stub.py reader.js /stub/
         CMD ["python", "-u", "/stub/app-stub.py"]
     restart: unless-stopped
+    environment:
+      RESULTS_TOKEN: ${RESULTS_TOKEN:-}
+      RESULTS_DIR: /data/results
+    volumes:
+      # venue-test reports survive redeploys
+      - ag-stub-results:/data
     networks:
       - dokploy-network
     labels:
@@ -57,3 +64,6 @@ services:
     restart: unless-stopped
     networks:
       - dokploy-network
+
+volumes:
+  ag-stub-results:

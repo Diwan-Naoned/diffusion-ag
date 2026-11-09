@@ -36,6 +36,9 @@ services:
   app:
     image: python:3.13-alpine
     command: ["python", "-u", "/stub/app-stub.py"]
+    environment:
+      RESULTS_TOKEN: localtest
+      RESULTS_DIR: /tmp/results
     volumes:
       - ./test:/stub:ro
     networks:
