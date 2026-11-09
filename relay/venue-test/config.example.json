@@ -1,0 +1,18 @@
+{
+  "srt_addr": "127.0.0.1:8890",
+  "srt_streamid": "publish:ag:publisher:localtest",
+  "srt_latency_ms": 200,
+  "whep_url": "http://127.0.0.1:8088/media/trad/whep",
+  "cookie": "ag_access=ok",
+  "base_url": "http://127.0.0.1:8088",
+  "results_token": "localtest",
+  "connect_rate": 20,
+  "speed_seconds": 3,
+  "wifi_stages": [
+    {"listeners": 1, "seconds": 20},
+    {"listeners": 50, "seconds": 20},
+    {"listeners": 200, "seconds": 30}
+  ],
+  "mobile_stages": [{"listeners": 1, "seconds": 20}],
+  "mobile_720_stages": [{"listeners": 1, "seconds": 20}]
+}

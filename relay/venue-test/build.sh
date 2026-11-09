@@ -1,0 +1,61 @@
+#!/bin/sh
+# Build the Windows venue test tool from the spike environment (relay/.env).
+#
+#   relay/venue-test/build.sh            -> dist/test-connexion-AG.zip
+#
+# The executable embeds the SRT publish credentials of the spike stack and the
+# results token: rotate RELAY_PUBLISH_PASS after the venue test (runbook).
+# Env overrides: SRT_HOST (default dokploy.cocaud.dev), ENV_FILE.
+set -eu
+cd "$(dirname "$0")"
+ENV_FILE=${ENV_FILE:-../.env}
+[ -f "$ENV_FILE" ] || { echo "missing $ENV_FILE (spike environment)" >&2; exit 1; }
+# shellcheck disable=SC1090
+. "$ENV_FILE"
+: "${RELAY_PUBLISH_USER:?}" "${RELAY_PUBLISH_PASS:?}" "${APP_HOST:?}"
+if [ -z "${RESULTS_TOKEN:-}" ]; then
+  RESULTS_TOKEN=$(openssl rand -hex 16)
+  printf '\n# venue-test reports (stub /results), also set in Dokploy\nRESULTS_TOKEN=%s\n' "$RESULTS_TOKEN" >> "$ENV_FILE"
+  echo "Added RESULTS_TOKEN to $ENV_FILE: copy it into the Dokploy environment and redeploy." >&2
+fi
+SRT_HOST=${SRT_HOST:-dokploy.cocaud.dev}
+
+[ -f media/test1080.ts ] && [ -f media/test720.ts ] && [ -f media/testcheck.ts ] || ./gen-media.sh
+
+cat > config.json <<JSON
+{
+  "srt_addr": "${SRT_HOST}:8890",
+  "srt_streamid": "publish:ag:${RELAY_PUBLISH_USER}:${RELAY_PUBLISH_PASS}",
+  "srt_latency_ms": 200,
+  "whep_url": "https://${APP_HOST}/media/trad/whep",
+  "cookie": "ag_access=ok",
+  "base_url": "https://${APP_HOST}",
+  "results_token": "${RESULTS_TOKEN}",
+  "phone_page": "${APP_HOST}/login",
+  "connect_rate": 20,
+  "speed_seconds": 8,
+  "wifi_stages": [
+    {"listeners": 1, "seconds": 45},
+    {"listeners": 10, "seconds": 60},
+    {"listeners": 50, "seconds": 60},
+    {"listeners": 100, "seconds": 60},
+    {"listeners": 200, "seconds": 90},
+    {"listeners": 300, "seconds": 60}
+  ],
+  "mobile_stages": [
+    {"listeners": 1, "seconds": 60},
+    {"listeners": 3, "seconds": 150}
+  ],
+  "mobile_720_stages": [
+    {"listeners": 3, "seconds": 120}
+  ]
+}
+JSON
+
+mkdir -p dist/test-connexion-AG
+GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" \
+  -o dist/test-connexion-AG/test-connexion-AG.exe .
+cp CONSIGNES.txt dist/test-connexion-AG/
+(cd dist && rm -f test-connexion-AG.zip && zip -qr test-connexion-AG.zip test-connexion-AG)
+ls -l dist/test-connexion-AG.zip
+echo "Results: https://${APP_HOST}/results?token=${RESULTS_TOKEN}"

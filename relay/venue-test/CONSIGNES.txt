@@ -1,0 +1,84 @@
+TEST DE LA CONNEXION DE LA SALLE POUR L'AG
+==========================================
+
+Merci de faire ce test ! Il vérifie que la connexion internet de la salle
+permet de diffuser l'AG sur YouTube et la traduction sur les téléphones.
+Vous n'avez rien à régler : le programme fait tout seul et vous guide.
+
+Durée : environ 30 minutes sur place.
+
+
+À EMPORTER
+----------
+- L'ordinateur portable Windows, avec son chargeur.
+- Le téléphone Android, avec son chargeur, et le forfait mobile actif
+  (le test utilise environ 1 Go de données mobiles).
+- Le mot de passe du Wi-Fi de la salle (à demander à l'accueil).
+- Si possible, des écouteurs pour le téléphone.
+
+
+AVANT D'Y ALLER (à la maison)
+-----------------------------
+1. Faites un clic droit sur le fichier « test-connexion-AG.zip »,
+   puis « Extraire tout… », puis « Extraire ».
+   (Ne lancez pas le programme directement depuis le fichier .zip.)
+2. Dans le dossier extrait, double-cliquez sur « test-connexion-AG ».
+3. Si un écran bleu « Windows a protégé votre ordinateur » apparaît :
+   cliquez sur « Informations complémentaires », puis « Exécuter quand même ».
+   C'est normal : le programme a été fait spécialement pour ce test.
+4. Une fenêtre noire s'ouvre avec le titre « Test de la connexion pour l'AG ».
+   Tapez 1 puis Entrée pour la « Vérification rapide » : elle dure environ
+   1 minute et utilise très peu de connexion (environ 2 Mo).
+   Si Windows demande d'autoriser l'accès au réseau, cliquez sur « Autoriser ».
+5. À la fin, le programme affiche [ OK ] si tout fonctionne, et envoie le
+   résultat tout seul. Appuyez sur Entrée pour fermer la fenêtre.
+   S'il affiche [ PROBLÈME ], ou si l'antivirus bloque le programme,
+   prévenez Valentin.
+
+
+DANS LA SALLE
+-------------
+1. Installez-vous à l'endroit où sera l'ordinateur de diffusion le jour de
+   l'AG (la régie, près de la scène). Demandez à l'accueil si besoin.
+2. Branchez l'ordinateur sur secteur.
+3. Connectez l'ordinateur au Wi-Fi de la salle.
+4. Double-cliquez sur « test-connexion-AG », tapez 2 puis Entrée
+   (« Test complet ») et suivez les consignes à l'écran.
+   - Si Windows demande d'autoriser l'accès au réseau, cliquez sur « Autoriser ».
+   - Ne fermez pas la fenêtre et ne mettez pas l'ordinateur en veille pendant
+     le test.
+   - Le programme vous demandera à un moment de passer l'ordinateur sur le
+     partage de connexion du téléphone : c'est prévu.
+5. À la fin, le programme envoie les résultats tout seul. S'il affiche que
+   l'envoi a échoué, envoyez à Valentin le fichier indiqué à l'écran
+   (il est aussi sur le Bureau, son nom commence par « test-connexion-AG »).
+
+
+ACTIVER LE PARTAGE DE CONNEXION SUR ANDROID
+-------------------------------------------
+Paramètres > Connexions > Point d'accès mobile et modem > Point d'accès mobile
+(selon le téléphone : Paramètres > Réseau et Internet > Point d'accès et partage
+de connexion). Le nom du réseau et le mot de passe sont affichés sur cette page.
+Sur l'ordinateur, cliquez sur l'icône Wi-Fi en bas à droite et choisissez ce
+réseau.
+
+
+À DEMANDER AU RESPONSABLE DE LA SALLE (si possible)
+---------------------------------------------------
+Le programme vous posera ces questions à la fin, notez les réponses ici :
+- Combien d'appareils (téléphones) le Wi-Fi peut-il accepter en même temps ?
+  (Il y aura peut-être 100 à 200 personnes connectées.)
+  ................................................................
+- Y a-t-il une prise réseau (câble Ethernet) utilisable près de la régie ?
+  ................................................................
+- Faut-il une page de connexion pour avoir internet sur le Wi-Fi ?
+  ................................................................
+
+
+EN CAS DE PROBLÈME
+------------------
+- Le programme dit « Impossible de joindre le serveur » : vérifiez que
+  l'ordinateur a bien internet (ouvrez un site web), puis relancez-le.
+- Le programme semble bloqué : attendez 2 minutes. S'il ne se passe toujours
+  rien, fermez la fenêtre, relancez-le, et prévenez Valentin.
+- Vous pouvez relancer le programme autant de fois que nécessaire.

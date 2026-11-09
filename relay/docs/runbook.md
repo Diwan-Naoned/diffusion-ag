@@ -126,6 +126,10 @@ The laptop must not sleep: disable sleep / screen saver, keep it on mains power.
 
 ## 5. Pre-AG checklist
 
+**Venue network test (before the rehearsal, can be done by a non-technical person)**
+- [ ] `relay/venue-test/`: Windows tool that streams a 1080p test signal over SRT and opens up to 300 simulated WebRTC listeners, on the venue Wi-Fi then on a phone hotspot; results at `https://<APP_HOST>/results?token=<RESULTS_TOKEN>` (see [`venue-test/README.md`](../venue-test/README.md))
+- [ ] Ask the venue how many devices the Wi-Fi accepts (DHCP pool, max clients per access point): one laptop cannot test this
+
 **One week before (rehearsal, task 6.2)**
 - [ ] Full test at the venue on Wi-Fi, then forced onto the 5G backup
 - [ ] Tune the ducking threshold and the interpreter's noise gate with the real microphones
