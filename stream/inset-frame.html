@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="br">
+<head>
+<meta charset="utf-8">
+<title>Cadre incrustation</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<style>
+  /* White frame around the Débat inset camera (design D3). In OBS the inset
+     camera sits just below this source at (1424, 48), 448×252, with an
+     Image Mask/Blend filter using img/mask-inset.png (same shape) so its
+     square corners are cut. The frame covers the camera's outer 4 px. */
+  .frame {
+    position: absolute;
+    left: 1424px;
+    top: 48px;
+    width: 448px;
+    height: 252px;
+    box-sizing: border-box;
+    border: 4px solid var(--white);
+    border-radius: var(--radius-lg) 0 var(--radius-lg) 0;
+  }
+</style>
+</head>
+<body>
+<div class="root">
+  <div class="frame"></div>
+</div>
+</body>
+</html>

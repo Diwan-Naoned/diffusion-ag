@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="br">
+<head>
+<meta charset="utf-8">
+<title>Vote en salle</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<style>
+  .banner {
+    position: absolute;
+    left: 288px;
+    bottom: 184px;
+    box-sizing: border-box;
+    padding: 24px 40px 24px 28px;
+    background: var(--brand);
+    border-radius: var(--radius-lg) 0 var(--radius-lg) 0;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    color: var(--on-brand);
+  }
+  .bar { width: 16px; align-self: stretch; border-radius: var(--radius-pill); background: var(--accent); }
+  .lines { display: flex; flex-direction: column; gap: 6px; }
+  .lines .br { font: 700 46px/1.05 var(--font-headline); }
+  .lines .fr { font: italic 400 32px/1.2 var(--font-headline); }
+</style>
+</head>
+<body>
+<div class="root">
+  <div class="banner rise">
+    <div class="bar"></div>
+    <div class="lines">
+      <div class="br" data-text="vote.br"></div>
+      <div class="fr" data-text="vote.fr"></div>
+    </div>
+  </div>
+</div>
+<script src="texts.js"></script>
+<script src="common.js"></script>
+<script>fillTexts();</script>
+</body>
+</html>

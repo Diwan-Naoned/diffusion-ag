@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="br">
+<head>
+<meta charset="utf-8">
+<title>Présentation</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<style>
+  /* Blue ground with two transparent holes (design D3). In OBS, put the
+     slides capture and the tribune camera BELOW this source:
+       slides  1312×738 at (48, 80)
+       camera   480×270 at (1392, 80)
+     The camera hole is cut with the charter's shape (top-left and
+     bottom-right corners rounded 32 px), so the blue masks the camera's
+     square corners: no OBS mask filter is needed. */
+  .ground { position: absolute; inset: 0; display: block; }
+  .ground path { fill: var(--brand); fill-rule: evenodd; }
+
+  .title-block {
+    position: absolute;
+    left: 1392px;
+    top: 382px;
+    width: 480px;
+    height: 436px; /* bottom at 818 px, aligned with the slide */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: var(--on-brand);
+  }
+  .network { font: 400 26px/1.2 var(--font-display); letter-spacing: 0.02em; }
+  .accent-rule { width: 96px; height: 8px; border-radius: var(--radius-pill); background: var(--accent); margin: 18px 0; }
+  .title-block .br { font: 700 36px/1.05 var(--font-headline); }
+  .title-block .fr { font: italic 400 30px/1.2 var(--font-headline); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="root">
+  <svg class="ground fade" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true">
+    <path d="M0 0H1920V1080H0Z
+             M48 80H1360V818H48Z
+             M1424 80H1872V318A32 32 0 0 1 1840 350H1392V112A32 32 0 0 1 1424 80Z"></path>
+  </svg>
+  <div class="title-block rise d2">
+    <div class="network" data-text="network"></div>
+    <div class="accent-rule"></div>
+    <div class="br" data-text="title.br"></div>
+    <div class="fr" data-text="title.fr"></div>
+  </div>
+</div>
+<script src="texts.js"></script>
+<script src="common.js"></script>
+<script>fillTexts();</script>
+</body>
+</html>

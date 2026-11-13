@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="br">
+<head>
+<meta charset="utf-8">
+<title>Interlude</title>
+<!-- URLs:
+     interlude.html?v=pause&start=HH:MM   (restart time, Mac local time)
+     interlude.html?v=incident
+     interlude.html?v=fin -->
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<style>
+  .root { background: var(--brand); color: var(--on-brand); }
+  .content { position: absolute; left: 160px; top: 260px; width: 960px; display: flex; flex-direction: column; }
+  .content h1 { margin: 0; font: 900 184px/1 var(--font-headline); }
+  .accent-rule { width: 240px; height: 12px; border-radius: var(--radius-pill); background: var(--accent); margin: 36px 0 30px; }
+  .content .title-fr { margin: 0; font: italic 400 68px/1.1 var(--font-headline); }
+
+  .countdown { margin-top: 56px; display: flex; align-items: center; gap: 32px; }
+  .countdown .label { display: flex; flex-direction: column; gap: 4px; }
+  .countdown .label .br { font: 700 36px/1.2 var(--font-headline); }
+  .countdown .label .fr { font: italic 400 32px/1.2 var(--font-headline); }
+  .clock { font: 900 112px/1 var(--font-headline); }
+
+  /* Incident: the title wraps on two lines and a message follows, so the
+     block starts higher and the title is smaller, to stay clear of the
+     signature logo in the bottom-left corner. */
+  .incident .content { top: 150px; }
+  .incident .content h1 { font-size: 152px; }
+  .message { margin-top: 48px; display: flex; flex-direction: column; gap: 12px; }
+  .message .br { margin: 0; font: 700 36px/1.25 var(--font-headline); }
+  .message .fr { margin: 0; font: italic 400 34px/1.25 var(--font-headline); }
+
+  .characters { position: absolute; left: 1180px; top: 380px; width: 600px; height: auto; display: block; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="root">
+  <div class="content">
+    <h1 class="br rise" id="title-br"></h1>
+    <div class="accent-rule rule"></div>
+    <p class="title-fr fr rise d1" id="title-fr"></p>
+
+    <div class="countdown rise d2" id="countdown" hidden>
+      <div class="label">
+        <div class="br" data-text="resumesIn.br"></div>
+        <div class="fr" data-text="resumesIn.fr"></div>
+      </div>
+      <div class="clock tabular" id="clock">--:--</div>
+    </div>
+
+    <div class="message rise d2" id="message" hidden>
+      <p class="br" data-text="incidentMessage.br"></p>
+      <p class="fr" data-text="incidentMessage.fr"></p>
+    </div>
+  </div>
+  <img class="characters float fade d1" src="img/diwan-bolomig.svg" alt="" aria-hidden="true">
+</div>
+<script src="texts.js"></script>
+<script src="common.js"></script>
+<script>
+  fillTexts();
+  var v = new URLSearchParams(location.search).get('v');
+  if (['pause', 'incident', 'fin'].indexOf(v) < 0) {
+    console.error('interlude: use ?v=pause, ?v=incident or ?v=fin');
+    v = 'pause';
+  }
+  document.getElementById('title-br').textContent = TEXTS[v].br;
+  document.getElementById('title-fr').textContent = TEXTS[v].fr;
+  if (v === 'pause') {
+    document.getElementById('countdown').hidden = false;
+    startCountdown(document.getElementById('clock'));
+  }
+  if (v === 'incident') {
+    document.querySelector('.root').classList.add('incident');
+    document.getElementById('message').hidden = false;
+  }
+</script>
+</body>
+</html>

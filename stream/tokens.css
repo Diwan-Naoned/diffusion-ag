@@ -1,0 +1,127 @@
+/* Diwan — generated from tokens.json */
+:root, [data-theme="light"] {
+  --pantone-2685: #27257a; /* Brand blue, Pantone 2685 C (C100 M100 Y0 K0). The ground of every logo: the oval of the generic logo and the two-corner shape of school and section logos. Never tint or swap it. */
+  --process-magenta: #e2007a; /* Process magenta C. The girl's dress in the three characters; illustration fill only. */
+  --process-cyan: #009ee0; /* Process cyan C. Shoes and shirt details in the three characters; illustration fill only. */
+  --process-yellow: #ffec00; /* Process yellow C. The flower/sun and the trousers in the characters; the flower of the eil derez logo. Illustration fill, never text on white. */
+  --pantone-152: #f09100; /* Pantone 152 C. Orange hair in the characters, and on screen the accent: highlight grounds, callouts and the rule under headings. Carries ink (6.4:1) or brand (5.2:1) text, never white (2.4:1). Use the alias `accent` on screen. */
+  --pantone-7508: #f6d8a3; /* Pantone 7508 C. Light skin and hand tones in the characters. */
+  --pantone-178-44: #f8c9bc; /* Pantone 178 C at 44%. Pink skin tone in the characters. */
+  --pantone-7515-88: #e5b28a; /* Pantone 7515 C at 88%. Tan skin tone in the characters. */
+  --pantone-2727: #5185c0; /* Pantone 2727 C. Blue dungarees and hair in the characters. */
+  --pantone-7482: #00a562; /* Pantone 7482 C. Green hair, flower stem and leaves. */
+  --pantone-1797: #db001b; /* Pantone 1797 C. Red sleeves and hair ties in the characters, and on screen the danger colour: a state that is blocked, refused or in breach. Carries white text (5.4:1). Use the alias `danger` on screen. */
+  --pantone-254: #93117e; /* Pantone 254 C. Purple shirt and shoes in the characters. */
+  --pantone-2727-66: #8caed5; /* Pantone 2727 C at 66%. Lighter blue: dungaree pocket and shading. */
+  --pantone-7482-63: #5ec69c; /* Pantone 7482 C at 63%. Lighter green: shoes and shading. */
+  --pantone-1797-70: #db001b; /* Pantone 1797 C at 70% (C0 M70 Y70 K0). The guide prints the same RGB and hex as the 100% swatch, which looks like a misprint; value kept exactly as printed. Confirm with the printer before use. Illustration only: the screen danger colour is `danger`. */
+  --pantone-254-73: #b051a1; /* Pantone 254 C at 73%. Lighter purple: shirt highlights. */
+  --pantone-273: #2e3192; /* Pantone 273 C. Stationery text: the e-mail and address lines on letterheads and envelopes, and the tagline under the signature. Value as drawn in the guide (no hex is printed for it). Reads on `surface`. */
+  --pantone-109: #fddd04; /* Pantone 109 C. The 0.5 pt rule above the letterhead footer and the yellow quarter-round behind the signature logo. Value as drawn in the guide (no hex is printed for it). A print ground or rule, never text on white; the screen accent is `pantone-152`. */
+  --white: #ffffff; /* The wordmark, the school or section name and the outlined characters inside every logo; the outline added around a logo on a dark or busy ground. */
+  --black: #231f20; /* The ground of the monochrome black logo versions, replacing `pantone-2685`. Value as drawn in the guide. */
+  --surface: #ffffff; /* Screen addition, not in the guide. Page background. Logos sit on it without an outline. */
+  --ink: var(--black); /* Screen addition, not in the guide. Body copy on `surface`. */
+  --brand: #2a2a7e; /* Screen addition, not in the guide. Headings, links and filled controls on `surface`; a ground for `on-brand` text. */
+  --on-brand: var(--white); /* Screen addition, not in the guide. Text and marks on `brand`. */
+  --accent: #f0b100; /* Screen addition, not in the guide. The rule under headings, small badges and chart fills — as the guide uses its second colour: a rule and a shape, never a ground for copy. Carries `ink` (6.8:1) or `brand` (5.4:1) text, never white (2.4:1, which fails even as large text). A paragraph set on full-strength orange glares despite that passing ratio: set copy on `surface` and let an accent rule mark the block. Sits only 2.15:1 from `danger`, so never let orange against red carry a difference on its own. */
+  --danger: var(--pantone-1797); /* Screen addition, not in the guide. A state that is blocked, refused or in breach: a vetoed date, a rule violation, a removal that costs something. Carries `on-danger` text. Keep it rare — it reads as a warning only while it is. */
+  --on-danger: var(--white); /* Screen addition, not in the guide. Text and marks on `danger` (5.4:1). */
+}
+:root {
+  --logo-min-width: 94px; /* Minimum logo width: 25 mm in print (about 94px on screen). Never set any logo narrower. */
+  --print-margin: 57px; /* 15 mm: the distance from the top and left paper edges to the logo on letterheads and envelopes. */
+  --space-1: 4px; /* Screen addition. Gaps inside a control: icon to label. */
+  --space-2: 8px; /* Screen addition. Tight gaps between related items. */
+  --space-3: 16px; /* Screen addition. Default padding and gutter. */
+  --space-4: 24px; /* Screen addition. Card padding, gaps between blocks. */
+  --space-5: 40px; /* Screen addition. Section spacing. */
+  --space-6: 64px; /* Screen addition. Page-level spacing around heroes. */
+  --radius-sm: 4px; /* Screen addition. Inputs, tags. */
+  --radius-md: 12px; /* Screen addition. Buttons, cards. */
+  --radius-lg: 32px; /* Screen addition. Large panels cut like the school logo: round the top-left and bottom-right corners only, leave the other two square. */
+  --radius-pill: 999px; /* Screen addition. Pills and round badges, echoing the oval logo. */
+  --font-display: "Danoise Diwan", "Trebuchet MS", sans-serif;
+  --font-headline: "Myriad Pro Condensed", "Myriad Pro", "Fira Sans Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Formata Light Condensed", "Formata", "Fira Sans Condensed", "Arial Narrow", sans-serif;
+  --text-wordmark: 700 96px/0.95 var(--font-display); /* The name diwan, always lowercase, in Danoise Diwan Bold. Use the logo files for the logo itself; this style is for setting the name large in layouts. */
+  --text-school-name: 400 32px/1.1 var(--font-display); /* A school or section name under the wordmark: Danoise Diwan Medium, lowercase only, left-aligned with diwan. */
+  --text-network-name: 400 20px/1.2 var(--font-display); /* The network name above the wordmark in the generic oval logo. */
+  --text-headline: 900 48px/1.05 var(--font-headline); /* Poster and campaign headlines over photography: Myriad Pro Black Condensed in the guide. Size is a screen addition. */
+  --text-headline-italic: italic 400 48px/1.05 var(--font-headline); /* The lighter headline voice: Myriad Pro Condensed Italic in the guide. Size is a screen addition. */
+  --text-tagline: italic 400 20px/1.3 var(--font-headline); /* The signature line under the logo and photo footnotes, in `pantone-273` on `surface`. */
+  --text-body: 300 16px/1.5 var(--font-body); /* Running copy: Formata Light Condensed in the guide. Size is a screen addition. */
+  --text-stationery: 300 12px/1.4 var(--font-body); /* Letterhead and envelope lines: Formata Light Condensed 9 pt, widely tracked, in `pantone-273`. */
+}
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 96px;
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.school-name {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+.network-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+.headline {
+  font-family: var(--font-headline);
+  font-size: 48px;
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+.headline-italic {
+  font-family: var(--font-headline);
+  font-size: 48px;
+  line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: 0;
+  font-style: italic;
+}
+.tagline {
+  font-family: var(--font-headline);
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 400;
+  letter-spacing: 0;
+  font-style: italic;
+}
+.body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 300;
+  letter-spacing: 0;
+}
+.stationery {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+}
+@font-face {
+  font-family: "Danoise Diwan";
+  src: url("fonts/DANOISEDIWAN-Medium.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Danoise Diwan";
+  src: url("fonts/DANOISEDIWAN-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

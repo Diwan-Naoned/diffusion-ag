@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="br">
+<head>
+<meta charset="utf-8">
+<title>Bandeau règles</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<style>
+  .strip {
+    position: absolute;
+    left: 288px;
+    bottom: 48px;
+    height: 116px;
+    box-sizing: border-box;
+    padding: 0 36px 0 32px;
+    background: var(--surface);
+    border-radius: var(--radius-lg) 0 var(--radius-lg) 0;
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+  .head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-right: 32px;
+    border-right: 2px solid #e2e2ee;
+  }
+  .head .br { font: 700 30px/1.1 var(--font-headline); color: var(--brand); }
+  .head .fr { font: italic 400 24px/1.1 var(--font-headline); color: var(--ink); }
+  .item { display: flex; gap: 14px; align-items: center; }
+  .num {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-pill);
+    background: var(--brand);
+    color: var(--on-brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: 900 26px/1 var(--font-headline);
+  }
+  .item .lines { display: flex; flex-direction: column; gap: 2px; }
+  .item .b { font: 700 26px/1.1 var(--font-headline); color: var(--brand); white-space: nowrap; }
+  .item .f { font: italic 400 22px/1.1 var(--font-headline); color: var(--ink); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="root">
+  <div class="strip rise">
+    <div class="head">
+      <div class="br" data-text="rulesTitle.brShort"></div>
+      <div class="fr" data-text="rulesTitle.frShort"></div>
+    </div>
+  </div>
+</div>
+<template id="item">
+  <div class="item">
+    <div class="num"></div>
+    <div class="lines"><div class="b"></div><div class="f"></div></div>
+  </div>
+</template>
+<script src="texts.js"></script>
+<script src="common.js"></script>
+<script>
+  fillTexts();
+  var strip = document.querySelector('.strip');
+  var tpl = document.getElementById('item');
+  TEXTS.rules.forEach(function (r, i) {
+    var node = tpl.content.cloneNode(true);
+    node.querySelector('.num').textContent = i + 1;
+    node.querySelector('.b').textContent = r.brShort;
+    node.querySelector('.f').textContent = r.frShort;
+    strip.appendChild(node);
+  });
+</script>
+</body>
+</html>
