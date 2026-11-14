@@ -247,6 +247,9 @@ export const br: Partial<Dict> = {
   'settings.regenerate': 'Krouiñ ur c’hod nevez',
   'settings.regenerateWarn':
     'An dud kevreet dija a gollo o moned ha ret e vo dezho implijout al liamm nevez pe ar c’hod nevez.',
+  'settings.customCode': 'Dibab ar c’hod',
+  'settings.customCodeSave': 'Cheñch ar c’hod',
+  'settings.customCodeHint': 'Etre {min} ha {max} lizherenn pe sifr, hep lizherenn tildet. Ne vez ket kemeret e kont an esaouennoù hag ar barrennigoù.',
   'settings.link': 'Liamm evit kemer perzh',
   'settings.copy': 'Eilañ al liamm',
   'settings.copied': 'Liamm eilet',
@@ -286,6 +289,8 @@ export const br: Partial<Dict> = {
   'settings.err.export_not_opened': 'Digorit un ezporzhiadur da gentañ (CSV pe stumm da voullañ).',
   'settings.err.export_not_confirmed': 'Kadarnait da gentañ eo bet enrollet mat an ezporzhiadur.',
   'settings.err.invalid': 'Gwiriit maeziennoù ar furmskrid.',
+  'settings.err.code_invalid': 'Etre 6 ha 20 lizherenn pe sifr a rank bezañ er c’hod, hep lizherenn tildet.',
+  'settings.err.code_taken': 'Implijet eo ar c’hod-se gant ur vodadeg all dija. Dibabit unan all.',
   'state.preparation': 'O prientiñ',
   'state.in_progress': 'O vont en-dro',
   'state.ended': 'Echu',

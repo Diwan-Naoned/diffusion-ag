@@ -145,6 +145,31 @@ The laptop must not sleep: disable sleep / screen saver, keep it on mains power.
 - [ ] Web app points to the right YouTube video IDs; `/auth/media` and `/salle` work
 - [ ] OBS profiles imported on the venue laptop, same OBS version, fallback profiles updated with the new keys/passwords
 - [ ] `relay/.env.local` holds the new YouTube keys; `relay/fallback-local.sh prepare` done; Docker Desktop starts
+- [ ] Scene collection `AG scènes` loaded in OBS; `stream/` is on the Mac at the path the Browser Sources point to
+- [ ] Announced start time and pause restart time known (they go into the `?start=` URLs on the day)
+- [ ] Breton strings in `stream/texts.js` approved (or the drafts removed)
+
+**Packing list**
+- [ ] Mac + charger, extension lead / power strip
+- [ ] Tribune camera (T) and room camera (S), their USB cables
+- [ ] Active USB extension for the room camera (cable run over ~5 m)
+- [ ] USB-C adapters/dongles: enough ports for **both cameras on separate ports** (no shared hub), audio and the projector
+- [ ] Audio: cable from the venue mixer / room mic, interpreter's microphone, audio interface if used, headphones to monitor
+- [ ] Projector connection (HDMI cable + adapter), or the second screen for the slides
+- [ ] Tablet that drives the slides + its charger
+- [ ] 5G backup (phone or router) charged + its cable
+- [ ] Camera mounts / tripods, gaffer tape for cables on the floor
+- [ ] Phone with mobile data to check YouTube and `/salle` on a second device
+
+**Scenes (one hour before, about 10 min)**
+- [ ] Mac clock correct (System Settings → General → Date & Time, set automatically): the countdowns use it
+- [ ] `?start=HH:MM` set in the URL of the `Avant` source and of the `Pause` source (`interlude.html?v=pause&start=HH:MM`)
+- [ ] Both cameras live in OBS at the same time, OBS Stats shows no skipped frames; no camera microphone on any track
+- [ ] Google Slides presented full screen; the slide capture is sharp in `Présentation`; the tablet advances slides
+- [ ] Hotkeys, pressed while Chrome has focus: ⌃⌥1 Avant · ⌃⌥2 Présentation · ⌃⌥3 Débat – salle · ⌃⌥4 Débat – tribune · ⌃⌥5 Pause · ⌃⌥6 Incident · ⌃⌥7 Fin
+- [ ] ⌃⌥R hides/shows the rules strip, ⌃⌥V hides/shows the vote banner; the tablet still advances slides afterwards
+- [ ] Présentation → Débat: the strip and logo stay still (no replay)
+- [ ] Finish on `Avant` (countdown running), strip visible, vote banner hidden
 
 **One hour before**
 - [ ] Laptop on mains power, sleep disabled, 5G backup charged and ready

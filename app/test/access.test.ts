@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CODE_ALPHABET, CODE_LENGTH, generateCode, normalizeCode } from '../src/lib/code.ts';
+import { CODE_ALPHABET, CODE_LENGTH, generateCode, isValidCustomCode, normalizeCode } from '../src/lib/code.ts';
 import { accessCookieValue, parseAccessCookie } from '../src/web/cookies.ts';
 import { assemblyFromAccessCookie } from '../src/web/participant-access.ts';
 import { inCidr, resolveClientIp } from '../src/lib/client-ip.ts';
-import { Client, makeTestApp, testConfig } from './helpers.ts';
+import { Client, loginBureau, makeTestApp, testConfig } from './helpers.ts';
 
 function setup() {
   const t = makeTestApp();
@@ -50,6 +50,55 @@ describe('ag_access cookie (D3)', () => {
     expect(assemblyFromAccessCookie(deps, old)).toBeNull();
     const fresh = accessCookieValue(config, ag.id, ag.codeVersion + 1);
     expect(assemblyFromAccessCookie(deps, fresh)?.id).toBe(ag.id);
+  });
+});
+
+describe('custom access code', () => {
+  it('accepts 6 to 20 letters or digits once normalized', () => {
+    expect(isValidCustomCode('AG2026')).toBe(true);
+    expect(isValidCustomCode('DIWAN2026BREST')).toBe(true);
+    expect(isValidCustomCode('AG26')).toBe(false);
+    expect(isValidCustomCode('A'.repeat(21))).toBe(false);
+    expect(isValidCustomCode('ÉCOLE26')).toBe(false);
+    expect(isValidCustomCode('ag2026')).toBe(false);
+  });
+
+  it('replaces the code and revokes earlier cookies', () => {
+    const { ag, store, deps, config } = setup();
+    const old = accessCookieValue(config, ag.id, ag.codeVersion);
+    const result = store.setCode(ag.id, 'DIWAN26');
+    expect(result.ok && result.assembly.code).toBe('DIWAN26');
+    expect(result.ok && result.assembly.codeVersion).toBe(ag.codeVersion + 1);
+    expect(assemblyFromAccessCookie(deps, old)).toBeNull();
+    expect(store.findByCode('DIWAN26')?.id).toBe(ag.id);
+  });
+
+  it('keeps cookies when the code is unchanged', () => {
+    const { ag, store } = setup();
+    const result = store.setCode(ag.id, ag.code!);
+    expect(result.ok && result.assembly.codeVersion).toBe(ag.codeVersion);
+  });
+
+  it('refuses a code used by another AG', () => {
+    const { store } = setup();
+    const other = store.createAssembly({ name: 'AG 2027', date: '2027-11-20' });
+    store.setCode(other.id, 'DIWAN26');
+    const ag = store.createAssembly({ name: 'AG 2028', date: '2028-11-18' });
+    expect(store.setCode(ag.id, 'DIWAN26')).toEqual({ ok: false, reason: 'code_taken' });
+  });
+
+  it('is set from the settings form, normalized', async () => {
+    const { app, ag, store } = setup();
+    const client = new Client(app);
+    await loginBureau(client);
+    const res = await client.postForm(`/bureau/ag/${ag.id}/code`, { code: ' diwan-2026 ' });
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe(`/bureau/ag/${ag.id}/settings?ok=code`);
+    expect(store.getAssembly(ag.id)!.code).toBe('DIWAN2026');
+    const bad = await client.postForm(`/bureau/ag/${ag.id}/code`, { code: 'AG1' });
+    expect(bad.headers.get('location')).toBe(`/bureau/ag/${ag.id}/settings?error=code_invalid`);
+    const page = await client.get(`/bureau/ag/${ag.id}/settings?error=code_invalid`);
+    expect(await page.text()).toContain('6 à 20 lettres ou chiffres');
   });
 });
 

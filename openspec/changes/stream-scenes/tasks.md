@@ -31,7 +31,7 @@ Each overlay is checked in Chrome at 1920×1080 side by side with the mock-up ar
 - [x] 4.5 Set the Fade 300 ms scene transition, the fade show/hide transitions on the strip and vote banner, and the hotkeys of D10, and grant OBS the macOS Accessibility / Input Monitoring permission; verify every hotkey works while Chrome presents the slides and that the tablet still advances slides after each hotkey (spec: Keyboard operation)
 - [ ] 4.6 Verify on a local recording that switching scenes while the interpreter speaks leaves no gap on tracks 2 and 3 (spec: Audio unaffected by scene switches), and that all scenes render with the Mac's Wi-Fi off after a refresh of every Browser Source (spec: Works offline)
 - [ ] 4.7 Export the scene collection to `stream/obs/AG-scenes.json` and document the setup in `relay/docs/obs.md` (scene collection, global audio devices replacing the per-scene sources, Browser Source settings, hotkey table, absolute paths to fix after import); verify the doc matches the exported collection
-- [ ] 4.8 Add the scene checks to the pre-AG checklist in `relay/docs/runbook.md` (both cameras live, slides capture sharp, `?start=` times set, Mac clock correct, strip and vote toggles, hotkeys respond); verify the checklist can be run in under 10 minutes
+- [x] 4.8 Add the scene checks to the pre-AG checklist in `relay/docs/runbook.md` (both cameras live, slides capture sharp, `?start=` times set, Mac clock correct, strip and vote toggles, hotkeys respond); verify the checklist can be run in under 10 minutes
 
 ## 5. Integration
 

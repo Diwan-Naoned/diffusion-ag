@@ -238,6 +238,9 @@ export const fr = {
   'settings.regenerate': 'Générer un nouveau code',
   'settings.regenerateWarn':
     "Les personnes déjà connectées perdront l'accès et devront utiliser le nouveau lien ou le nouveau code.",
+  'settings.customCode': 'Choisir le code',
+  'settings.customCodeSave': 'Changer le code',
+  'settings.customCodeHint': 'De {min} à {max} lettres ou chiffres, sans accent. Les espaces et tirets sont ignorés.',
   'settings.link': 'Lien de participation',
   'settings.copy': 'Copier le lien',
   'settings.copied': 'Lien copié',
@@ -276,6 +279,8 @@ export const fr = {
   'settings.err.export_not_opened': "Ouvrez d'abord un export (CSV ou version imprimable).",
   'settings.err.export_not_confirmed': "Confirmez d'abord que l'export est bien enregistré.",
   'settings.err.invalid': 'Vérifiez les champs du formulaire.',
+  'settings.err.code_invalid': 'Le code doit contenir de 6 à 20 lettres ou chiffres, sans accent.',
+  'settings.err.code_taken': 'Ce code est déjà utilisé par une autre AG. Choisissez-en un autre.',
   'state.preparation': 'En préparation',
   'state.in_progress': 'En cours',
   'state.ended': 'Terminée',

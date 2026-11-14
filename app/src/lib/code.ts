@@ -10,6 +10,15 @@ export function generateCode(): string {
   return code;
 }
 
+/** A code chosen by the Bureau, after normalizeCode: letters and digits only, long enough to resist guessing. */
+export const CUSTOM_CODE_MIN = 6;
+export const CUSTOM_CODE_MAX = 20;
+const CUSTOM_CODE = new RegExp(`^[A-Z0-9]{${CUSTOM_CODE_MIN},${CUSTOM_CODE_MAX}}$`);
+
+export function isValidCustomCode(code: string): boolean {
+  return CUSTOM_CODE.test(code);
+}
+
 /** Normalizes typed input: case-insensitive, ignores spaces and dashes. */
 export function normalizeCode(input: string): string {
   return input.replace(/[\s-]+/g, '').toUpperCase();

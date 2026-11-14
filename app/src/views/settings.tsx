@@ -1,6 +1,7 @@
 import { raw } from 'hono/html';
 import { canExport, canRegenerateCode } from '../domain/lifecycle.ts';
 import type { Assembly } from '../domain/types.ts';
+import { CUSTOM_CODE_MAX, CUSTOM_CODE_MIN } from '../lib/code.ts';
 import { formatDayMonth, formatLongDate, formatTime, type StringKey, type Translator } from '../i18n/index.ts';
 import type { BureauSession } from '../web/types.ts';
 import { BureauLayout } from './bureau-layout.tsx';
@@ -15,6 +16,8 @@ const ERRORS: Record<string, StringKey> = {
   export_not_confirmed: 'settings.err.export_not_confirmed',
   invalid: 'settings.err.invalid',
   youtube: 'settings.youtubeInvalid',
+  code_invalid: 'settings.err.code_invalid',
+  code_taken: 'settings.err.code_taken',
 };
 
 function FlashMessage({ tr, flash }: { tr: Translator; flash: Flash }) {
@@ -237,6 +240,37 @@ export function SettingsPage(props: CommonProps & { ag: Assembly; link: string |
                     {tr.t('settings.printQr')}
                   </a>
                 </div>
+              )}
+              {canRegenerateCode(ag) && (
+                <form
+                  method="post"
+                  action={`${base}/code`}
+                  class="field"
+                  data-confirm={tr.t('settings.regenerateWarn')}
+                  data-confirm-ok={tr.t('settings.confirm')}
+                  data-confirm-cancel={tr.t('settings.cancel')}
+                >
+                  <label for="ag-code">{tr.t('settings.customCode')}</label>
+                  <div class="input-row">
+                    <input
+                      id="ag-code"
+                      name="code"
+                      class="input"
+                      required
+                      minlength={CUSTOM_CODE_MIN}
+                      maxlength={CUSTOM_CODE_MAX + 10}
+                      value={ag.code ?? ''}
+                      autocomplete="off"
+                      autocapitalize="characters"
+                      spellcheck={false}
+                      style="text-transform:uppercase"
+                    />
+                    <button type="submit" class="btn">
+                      {tr.t('settings.customCodeSave')}
+                    </button>
+                  </div>
+                  <span class="hint">{tr.t('settings.customCodeHint', { min: String(CUSTOM_CODE_MIN), max: String(CUSTOM_CODE_MAX) })}</span>
+                </form>
               )}
               {canRegenerateCode(ag) && (
                 <div class="stack" style="gap:8px">

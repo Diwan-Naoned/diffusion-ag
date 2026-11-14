@@ -93,7 +93,9 @@ export type SettingsResult =
   | { ok: true; assembly: Assembly }
   | { ok: false; error: 'not_found' | 'invalid_state' | 'invalid'; field?: 'minDelaySeconds' | 'maxChars' };
 
-export type ActionResult = { ok: true; assembly: Assembly } | { ok: false; reason: Refusal | 'not_found' };
+export type ActionResult =
+  | { ok: true; assembly: Assembly }
+  | { ok: false; reason: Refusal | 'not_found' | 'code_taken' };
 
 export class Store {
   constructor(
@@ -202,6 +204,24 @@ export class Store {
       this.db
         .prepare('UPDATE assemblies SET code = ?, code_version = code_version + 1 WHERE id = ?')
         .run(this.#uniqueCode(), id);
+      const version = this.#bumpVersion(id);
+      emit({ kind: 'assembly', assemblyId: id, version });
+      return { ok: true, assembly: this.getAssembly(id)! };
+    });
+  }
+
+  /**
+   * Sets a code chosen by the Bureau (already normalized and validated). Like regenerateCode, a new
+   * code bumps code_version so earlier participant cookies stop working; the same code is a no-op.
+   */
+  setCode(id: number, code: string): ActionResult {
+    return this.#write((emit) => {
+      const ag = this.getAssembly(id);
+      if (!ag) return { ok: false, reason: 'not_found' };
+      if (!canRegenerateCode(ag)) return { ok: false, reason: 'invalid_state' };
+      if (ag.code === code) return { ok: true, assembly: ag };
+      if (this.db.prepare('SELECT 1 FROM assemblies WHERE code = ?').pluck().get(code)) return { ok: false, reason: 'code_taken' };
+      this.db.prepare('UPDATE assemblies SET code = ?, code_version = code_version + 1 WHERE id = ?').run(code, id);
       const version = this.#bumpVersion(id);
       emit({ kind: 'assembly', assemblyId: id, version });
       return { ok: true, assembly: this.getAssembly(id)! };

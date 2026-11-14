@@ -52,6 +52,11 @@ l'AG : les pages ouvertes se mettent à jour seules.
 **Générer un nouveau code** rend l'ancien lien et l'ancien code inutilisables (les personnes
 déjà connectées perdent l'accès). À n'utiliser qu'en cas d'abus, puis renvoyez le nouveau lien.
 
+Pour un code plus facile à dicter (par ex. `DIWAN2026`), tapez-le dans **Choisir le code** puis
+**Changer le code** : de 6 à 20 lettres ou chiffres, sans accent. Comme pour un nouveau code,
+l'ancien lien et l'ancien code cessent de fonctionner : choisissez-le **avant** d'envoyer la
+convocation.
+
 ### 5. Ouvrir l'AG
 
 Le jour J, dans **Déroulé** : **Ouvrir l'AG**. La réception des interventions s'ouvre et la page

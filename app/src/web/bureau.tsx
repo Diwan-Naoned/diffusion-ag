@@ -7,6 +7,7 @@ import { bureauAssembly, bureauIntervention } from '../domain/views.ts';
 import { csvFilename, interventionsCsv } from '../exports/csv.ts';
 import { pickStrings, type Key } from '../i18n/index.ts';
 import { parseYoutubeId } from '../lib/youtube.ts';
+import { isValidCustomCode, normalizeCode } from '../lib/code.ts';
 import { DashboardPage, REJECT_CHIPS } from '../views/dashboard.tsx';
 import { ExportPrintPage } from '../views/export-print.tsx';
 import { AssembliesPage, QrPrintPage, SettingsPage, type Flash } from '../views/settings.tsx';
@@ -157,6 +158,17 @@ export function bureauRoutes(ctx: AppContext) {
     const result = store.regenerateCode(id);
     const back = `/bureau/ag/${id}/settings`;
     return c.redirect(result.ok ? `${back}?ok=code` : `${back}?error=${result.reason}`, 303);
+  });
+
+  app.post('/bureau/ag/:id/code', async (c) => {
+    const id = Number(c.req.param('id'));
+    const form = await c.req.parseBody();
+    const code = normalizeCode(typeof form.code === 'string' ? form.code : '');
+    const back = `/bureau/ag/${id}/settings`;
+    if (!isValidCustomCode(code)) return c.redirect(`${back}?error=code_invalid`, 303);
+    const result = store.setCode(id, code);
+    if (!result.ok) return c.redirect(result.reason === 'not_found' ? '/bureau/ags' : `${back}?error=${result.reason}`, 303);
+    return c.redirect(`${back}?ok=code`, 303);
   });
 
   app.post('/bureau/ag/:id/action/:action', (c) => {
